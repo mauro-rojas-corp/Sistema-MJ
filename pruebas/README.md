@@ -65,10 +65,14 @@ Qué revisar:
   opcional de lo que llegó, Observaciones, fecha automática y
   **Registrar recepción y avisar**. En la planilla deben quedar `✓` (o
   `✓ resumen`), la observación y la fecha del día.
-- Al registrar, la fila del cliente se pinta de B a K con el color del
-  Vencimiento (columna A). El color se toma del relleno de A; si A no tiene
-  relleno, de una regla de formato condicional sobre A; si no, de otra fila
-  con el mismo vencimiento. Si no hay color, se registra igual y se avisa.
+- Se registra aunque el cliente no tenga Encargado (sin aviso).
+- Aviso de retraso en la recepción: "En retraso: N días. Venció el …" sólo
+  si ya pasó el vencimiento; si no, no aparece nada. El vencimiento es el de
+  Vencimientos IVA (VENC. = último dígito del RUC, día 7 + 2·VENC. del mes
+  de la hoja).
+- Color del vencimiento: chip "VENC. n" en la ficha y, al registrar, la fila
+  se pinta de B a K en la planilla con el color de ese VENC. configurado en
+  Vencimientos IVA. Si la fila no tiene RUC, se usa el color de la columna A.
 - Datos del cliente: plegados por defecto, todos editables, Clave MH oculta.
 - Buzón: entrar con el usuario Encargado, ver la campana con el número,
   abrir el aviso (queda leído y abre la ficha), filtros y "Marcar todo".

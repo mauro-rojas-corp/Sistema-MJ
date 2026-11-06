@@ -67,6 +67,16 @@ export function monthIndexFromSheet(sheetName) {
   return num ? Number(num[1]) - 1 : null;
 }
 
+// Período fiscal de una hoja mensual: la hoja "OCTUBRE 2026" es la del IVA de
+// septiembre 2026 (se presenta en octubre). Devuelve "AAAA-MM" o null.
+export function periodoFiscalDeHoja(year, sheetName, desfase = -1) {
+  const idx = monthIndexFromSheet(sheetName);
+  const yearInSheet = String(sheetName || '').match(/\b(20\d{2})\b/);
+  const y = Number(yearInSheet ? yearInSheet[1] : year);
+  if (idx === null || !y) return null;
+  return ym(y, idx + desfase);
+}
+
 /* ---------- Formato ---------- */
 export function gs(n) { n = Math.round(Number(n) || 0); return (n < 0 ? '-' : '') + Math.abs(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.'); }
 export function toNum(s) { const t = String(s ?? '').replace(/[^\d-]/g, ''); return t === '' || t === '-' ? 0 : parseInt(t, 10); }

@@ -245,13 +245,39 @@ function handleAvisosMarcarLeidos(body, sessionUser) {
 
 // ── PINTAR LA FILA AL REGISTRAR LA RECEPCIÓN ─────────────────────────────
 // Al registrar la documentación recibida, la fila del cliente se pinta de B
-// a K con el color que tiene su Vencimiento en la columna A. El color sale,
-// en este orden, de: el relleno de la celda A, una regla de formato
-// condicional que aplique a esa celda, u otra fila con el mismo vencimiento
-// que tenga relleno.
+// a K con el color de su vencimiento, el mismo de Vencimientos IVA: VENC. =
+// último dígito del RUC (sin DV), color configurado en "IVA Config" (o el
+// de fábrica del módulo). Si la fila no tiene un RUC usable, el color sale
+// de la columna A: su relleno, una regla de formato condicional que aplique
+// a esa celda, u otra fila con el mismo vencimiento que tenga relleno.
 const RECEPCION_COLOR_COL_REFERENCIA = 1; // A
 const RECEPCION_COLOR_COL_DESDE = 2;      // B
 const RECEPCION_COLOR_COL_HASTA = 11;     // K
+// Mismos colores de fábrica que DEFAULT_COLORS de src/iva/ivaCore.js.
+const RECEPCION_COLORES_IVA = {
+  0: '#ffff99', 1: '#cc99ff', 2: '#4285f4', 3: '#ffcc99', 4: '#ccecff',
+  5: '#ffff99', 6: '#b6d7a8', 7: '#ffccff', 8: '#cde9de', 9: '#8e7cc3'
+};
+
+// VENC. del cliente: último dígito del RUC, sin el DV ("80171953-3" -> 3).
+function recepcionDigitoVenc_(sheet, row) {
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  let col = -1;
+  headers.forEach(function (h, i) {
+    const k = normalizeKey(h);
+    if (col === -1 && (k === 'ruc' || k === 'nroruc' || k === 'ruccliente' || k.indexOf('ruc') === 0)) col = i;
+  });
+  if (col === -1) return null;
+  const ruc = String(sheet.getRange(row, col + 1).getDisplayValue() || '').split('-')[0].replace(/\D/g, '');
+  return ruc ? Number(ruc.slice(-1)) : null;
+}
+
+function recepcionColorIva_(digito) {
+  let config = null;
+  try { config = typeof readIvaConfig === 'function' ? readIvaConfig() : null; } catch (err) { config = null; }
+  const propio = config && config.colores ? config.colores[digito] : '';
+  return /^#[0-9a-f]{6}$/i.test(String(propio || '')) ? String(propio) : RECEPCION_COLORES_IVA[digito];
+}
 
 function recepcionColorValido_(color) {
   const c = String(color || '').trim().toLowerCase();
@@ -322,12 +348,15 @@ function handleRecepcionPintarFila(body, sessionUser) {
   const row = Number(body.row);
   if (!(row >= 2) || row > sheet.getLastRow()) return errorResponse('Fila inválida', 'ROW_INVALID');
 
-  const encontrado = recepcionColorDeVencimiento_(sheet, row);
+  const digito = recepcionDigitoVenc_(sheet, row);
+  const encontrado = digito !== null
+    ? { color: recepcionColorIva_(digito), origen: 'vencimientos IVA (VENC. ' + digito + ')' }
+    : recepcionColorDeVencimiento_(sheet, row);
   if (!encontrado) {
     return jsonResponse({
       ok: true,
       pintado: false,
-      motivo: 'El Vencimiento de la columna A no tiene un color definido.'
+      motivo: 'El cliente no tiene RUC y el Vencimiento de la columna A no tiene un color definido.'
     });
   }
 
@@ -336,7 +365,7 @@ function handleRecepcionPintarFila(body, sessionUser) {
   const anterior = destino.getBackground();
   destino.setBackground(encontrado.color);
   logChange(sessionUser, body.year, body.sheet, row, 'Color B:K', anterior, encontrado.color);
-  return jsonResponse({ ok: true, pintado: true, color: encontrado.color, origen: encontrado.origen });
+  return jsonResponse({ ok: true, pintado: true, color: encontrado.color, origen: encontrado.origen, digito: digito });
 }
 
 function handleAvisosAction(action, body, sessionUser, sessionRole) {

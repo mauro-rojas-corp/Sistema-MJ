@@ -25,7 +25,19 @@ import {
 } from '../utils';
 import { api } from '../api';
 import { openMarangatuLogin } from '../marangatu';
-import { splitRuc } from '../iva/ivaCore';
+import {
+  splitRuc,
+  lastDigit,
+  normalizeConfig,
+  colorFor,
+  textOn,
+  vencAuto,
+  periodoFiscalDeHoja,
+  monthIndexFromSheet,
+  fechaCorta,
+  DIAS_C,
+} from '../iva/ivaCore';
+import { getIvaConfig } from '../iva/ivaConfigCache';
 import {
   ArrowLeft,
   Receipt,
@@ -41,6 +53,7 @@ import {
   EyeOff,
   Send,
   Loader2,
+  Clock,
 } from 'lucide-react';
 
 // Cuánto queda visible el ✓ "Guardado" después de pintar el cambio.
@@ -56,6 +69,9 @@ const PRIORITY_FIELD_TESTS = [
   (c) => c === 'contacto' || c.startsWith('contacto'),
   (c) => c.startsWith('telefono') || c.startsWith('tel') || c.startsWith('celular'),
 ];
+
+const DIA_MS = 86_400_000;
+const inicioDia = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
 
 function sameUser(a, b) {
   return normalizeSearchText(a) === normalizeSearchText(b);
@@ -183,6 +199,37 @@ export default function ClientDetail({
   );
 
   const rucText = rucColumn ? String(values[rucColumn] ?? '').trim() : '';
+
+  // Vencimiento como en Vencimientos IVA: VENC. = último dígito del RUC (sin
+  // DV), vence el día 7 + 2·VENC. del mes de la hoja, con el color de ese
+  // VENC. Sin RUC usable, se toma el día de la columna Vencimiento.
+  const [ivaConfig, setIvaConfig] = useState(() => normalizeConfig(null));
+  useEffect(() => {
+    let vivo = true;
+    getIvaConfig().then((config) => {
+      if (vivo) setIvaConfig(config);
+    });
+    return () => {
+      vivo = false;
+    };
+  }, []);
+  const venc = useMemo(() => {
+    const digito = lastDigit(splitRuc(rucText).ruc);
+    const periodo = periodoFiscalDeHoja(year, month);
+    let fecha = null;
+    if (digito !== null && periodo) {
+      fecha = vencAuto(ivaConfig, digito, periodo).fecha;
+    } else {
+      const dia = parseInt(String(vencimientoColumn ? values[vencimientoColumn] ?? '' : '').replace(/\D+/g, ' ').trim(), 10);
+      const mesIdx = monthIndexFromSheet(month);
+      const anioHoja = String(month || '').match(/\b(20\d{2})\b/);
+      const anio = Number(anioHoja ? anioHoja[1] : year);
+      if (dia >= 1 && dia <= 31 && mesIdx !== null && anio) fecha = new Date(anio, mesIdx, dia);
+    }
+    const color = digito !== null ? colorFor(ivaConfig, digito) : null;
+    const retraso = fecha ? Math.round((inicioDia(new Date()) - inicioDia(fecha)) / DIA_MS) : 0;
+    return { digito, fecha, color, retrasoDias: retraso > 0 ? retraso : 0 };
+  }, [rucText, year, month, ivaConfig, vencimientoColumn, values]);
   const vencimientoText = vencimientoColumn ? formatVencimiento(values[vencimientoColumn]) : '';
   const fechaActual = fechaColumn ? formatSheetValue(values[fechaColumn]) : '';
   const hoy = formatDateDMY(new Date());
@@ -373,7 +420,9 @@ export default function ClientDetail({
             return detail ? `${d.label} (${detail})` : d.label;
           }),
           nota: observacionesDraft,
-          vencimiento: vencimientoText,
+          vencimiento: venc.fecha
+            ? `${DIAS_C[venc.fecha.getDay()]} ${fechaCorta(venc.fecha)}`
+            : vencimientoText,
         });
         result = { tipo: 'ok', texto: `Recepción registrada el ${hoy} y aviso enviado a ${encargado}.` };
       } catch (err) {
@@ -621,13 +670,26 @@ export default function ClientDetail({
       {/* Cabecera: identidad del cliente y accesos rápidos */}
       <motion.section
         className="rx-card rx-client-head"
+        style={venc.color ? { borderLeft: `6px solid ${venc.color}` } : undefined}
         initial={{ opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ type: 'spring', stiffness: 300, damping: 26 }}
       >
         <div className="rx-client-head-main">
           <h2 className="rx-client-name">{formatSheetValue(clientName)}</h2>
-          <div className="rx-client-meta">{metaParts.join(' · ')}</div>
+          <div className="rx-client-meta">
+            {venc.color && (
+              <span
+                className="rx-venc-chip"
+                style={{ background: venc.color, color: textOn(venc.color) }}
+                title="Color del vencimiento en Vencimientos IVA"
+              >
+                VENC. {venc.digito}
+                {venc.fecha && ` · ${DIAS_C[venc.fecha.getDay()]} ${venc.fecha.getDate()}`}
+              </span>
+            )}
+            <span>{metaParts.join(' · ')}</span>
+          </div>
           {(presUser || archUser) && (
             <div className="stamps-row">
               {presUser && (
@@ -694,6 +756,16 @@ export default function ClientDetail({
               </span>
             )}
           </div>
+
+          {venc.retrasoDias > 0 && !readOnlyPreview && (
+            <div className="rx-retraso" role="status">
+              <Clock size={18} aria-hidden="true" />
+              <span>
+                <strong>En retraso: {venc.retrasoDias} {venc.retrasoDias === 1 ? 'día' : 'días'}.</strong>{' '}
+                Venció el {DIAS_C[venc.fecha.getDay()]} {fechaCorta(venc.fecha)}.
+              </span>
+            </div>
+          )}
 
           <div className="rx-doc-grid">
             {documentColumns.map((d) => {

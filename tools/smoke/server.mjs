@@ -123,6 +123,7 @@ function summarizeIvaDoc(doc) {
 // Buzón: avisos en memoria (mismo contrato que AppsScript-Avisos.gs).
 const avisos = [];
 const pinturas = []; // filas pintadas por recepcionPintarFila
+const MOCK_COLORES_IVA = { 0: '#ffff99', 1: '#cc99ff', 2: '#4285f4', 3: '#ffcc99', 4: '#ccecff', 5: '#ffff99', 6: '#b6d7a8', 7: '#ffccff', 8: '#cde9de', 9: '#8e7cc3' };
 const sameName = (a, b) => String(a || '').trim().toLowerCase() === String(b || '').trim().toLowerCase();
 
 const sessions = new Map();
@@ -267,7 +268,7 @@ export async function handle(body) {
     case 'years':
       return { ok: true, years: ['2025', '2026'] };
     case 'months':
-      return { ok: true, months: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre'] };
+      return { ok: true, months: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'] };
     case 'read':
       return { ok: true, headers: HEADERS, rows: getRows(body.year, body.sheet) };
     case 'update': {
@@ -353,10 +354,12 @@ export async function handle(body) {
     case 'recepcionPintarFila': {
       const row = getRows(body.year, body.sheet).find((r) => r._row === Number(body.row));
       if (!row) return { ok: false, code: 'ROW_INVALID', error: 'Fila inválida' };
-      const dia = Number(String(row['Vencimiento'] || '').replace(/\D/g, '')) || 0;
-      if (dia % 5 === 0) return { ok: true, pintado: false, motivo: 'El Vencimiento de la columna A no tiene un color definido.' };
-      pinturas.push({ year: body.year, sheet: body.sheet, row: row._row });
-      return { ok: true, pintado: true, color: '#fde68a', origen: 'celda' };
+      const ruc = String(row['R.U.C.'] || '').split('-')[0].replace(/\D/g, '');
+      if (!ruc) return { ok: true, pintado: false, motivo: 'El cliente no tiene RUC y el Vencimiento de la columna A no tiene un color definido.' };
+      const digito = Number(ruc.slice(-1));
+      const colores = { ...MOCK_COLORES_IVA, ...((iva.config && iva.config.colores) || {}) };
+      pinturas.push({ year: body.year, sheet: body.sheet, row: row._row, color: colores[digito] });
+      return { ok: true, pintado: true, color: colores[digito], origen: `vencimientos IVA (VENC. ${digito})`, digito };
     }
     case 'smokePinturas':
       return { ok: true, pinturas };

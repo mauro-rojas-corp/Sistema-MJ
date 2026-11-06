@@ -48,6 +48,42 @@
   font-size: var(--rx-fs-sm, 14px);
 }
 
+.rx-client-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+}
+
+.rx-venc-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: var(--rx-fs-2xs, 12px);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.rx-retraso {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 1px solid var(--rx-red, #d05b55);
+  border-radius: 10px;
+  background: var(--rx-red-soft, #fff0ed);
+  color: var(--rx-red, #d05b55);
+  font-size: var(--rx-fs-sm, 14px);
+}
+
+.rx-retraso svg {
+  flex: none;
+  margin-top: 1px;
+}
+
 .rx-client-head-actions {
   display: flex;
   gap: 10px;
