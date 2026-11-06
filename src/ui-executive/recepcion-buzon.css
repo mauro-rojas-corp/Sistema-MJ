@@ -288,8 +288,7 @@
   overflow-wrap: anywhere;
 }
 
-.rx-doc-item-remove,
-.rx-doc-add-btn {
+.rx-doc-item-remove {
   flex: none;
   display: grid;
   place-items: center;
@@ -320,17 +319,6 @@
   min-width: 0;
 }
 
-.rx-doc-add-btn {
-  width: 36px;
-  border: 1px solid var(--rx-line-strong, #bcbec3);
-}
-
-.rx-doc-add-btn:hover:not(:disabled) {
-  border-color: var(--rx-brand, #27658d);
-  color: var(--rx-brand, #27658d);
-}
-
-.rx-doc-add-btn:disabled,
 .rx-doc-item-remove:disabled {
   cursor: default;
   opacity: 0.45;

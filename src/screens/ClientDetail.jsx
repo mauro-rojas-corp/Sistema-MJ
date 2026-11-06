@@ -56,7 +56,6 @@ import {
   Send,
   Loader2,
   Clock,
-  Plus,
   X,
 } from 'lucide-react';
 
@@ -367,7 +366,7 @@ export default function ClientDetail({
     }));
   }
 
-  // Enter (o el botón +) suma lo escrito como un ítem más de ese documento.
+  // Enter suma lo escrito como un ítem más de ese documento.
   function addDocItem(column) {
     setRegisterResult(null);
     setDraft((prev) => {
@@ -879,7 +878,6 @@ export default function ClientDetail({
                       <input
                         type="text"
                         className="rx-doc-detail"
-                        placeholder="Qué llegó + Enter"
                         aria-label={`Agregar a ${d.label}`}
                         value={doc.input}
                         maxLength={120}
@@ -892,16 +890,6 @@ export default function ClientDetail({
                           }
                         }}
                       />
-                      <button
-                        type="button"
-                        className="rx-doc-add-btn"
-                        aria-label={`Agregar a ${d.label} (botón)`}
-                        title="Agregar"
-                        disabled={registering || !doc.input.trim()}
-                        onClick={() => addDocItem(d.column)}
-                      >
-                        <Plus size={16} aria-hidden="true" />
-                      </button>
                     </div>
                   )}
                 </div>
