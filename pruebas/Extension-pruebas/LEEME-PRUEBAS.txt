@@ -1,0 +1,5 @@
+Extensión de PRUEBAS generada automáticamente desde Extension/.
+No editar acá: cambiar Extension/ y correr  node pruebas/generar-extension.mjs
+
+ID fijo: hljageieeeljncgmbbpmkflpdminodom
+Acepta pedidos de: http://localhost:3000 y https://control-total-clientes-pruebas.vercel.app
