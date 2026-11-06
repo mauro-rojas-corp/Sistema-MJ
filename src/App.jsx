@@ -21,6 +21,9 @@ import ScreenErrorBoundary from './components/ScreenErrorBoundary';
 import MobileTabBar from './components/MobileTabBar';
 import DesktopSidebar from './components/DesktopSidebar';
 import useMediaQuery from './hooks/useMediaQuery';
+import useAvisos from './hooks/useAvisos';
+import BuzonPanel from './components/BuzonPanel';
+import PendingClientOpener from './components/PendingClientOpener';
 const SettingsDialog = lazy(() => import('./components/SettingsDialog'));
 import { ClientsProvider, useClientsActions } from './context/ClientsContext';
 import { STORAGE_KEY_USER } from './config';
@@ -32,8 +35,9 @@ import {
 import { formatPeriodLabel } from './utils';
 import { api, onPrivateDataCleared } from './api';
 import { olvidarPlanilla } from './marcaciones/marcacionesStore';
-import { Calendar, User, Menu, X, UserCog, RefreshCw, Settings } from 'lucide-react';
+import { Calendar, User, Menu, X, UserCog, RefreshCw, Settings, Bell } from 'lucide-react';
 import './styles.css';
+import './ui-executive/recepcion-buzon.css';
 
 const INITIAL_AUTH_STATE = {
   status: 'anonymous',
@@ -110,6 +114,11 @@ export default function App({
   const [pinChangeSubmitting, setPinChangeSubmitting] = useState(false);
   const [pinChangeNotice, setPinChangeNotice] = useState('');
   const [syncStatus, setSyncStatus] = useState({ status: 'idle', pendingCount: 0 });
+  // Buzón de avisos: panel abierto, cliente a abrir desde un aviso y aviso
+  // breve cuando ese cliente no se encuentra.
+  const [buzonOpen, setBuzonOpen] = useState(false);
+  const [avisoTarget, setAvisoTarget] = useState(null);
+  const [appNotice, setAppNotice] = useState('');
   const [initialScreenReady, setInitialScreenReady] = useState(false);
   const markInitialScreenReady = useCallback(() => setInitialScreenReady(true), []);
 
@@ -134,6 +143,7 @@ export default function App({
   const canAssignClients =
     !readOnlyPreview && (userRole === 'SUPERUSUARIO' || userRole === 'ADMINISTRADOR');
   const authReady = !user || authState.status !== 'checking';
+  const buzon = useAvisos(authenticated && !readOnlyPreview, `${user || ''}|${activeSessionToken}`);
   const initialContentReady = initialScreenReady && authReady;
 
   // Suscripción al estado de la cola de guardado en memoria y protección
@@ -181,6 +191,8 @@ export default function App({
     setMobileTab('clients');
     setIvaOpenRuc(null);
     setMobileMenuOpen(false);
+    setBuzonOpen(false);
+    setAvisoTarget(null);
   }, []);
 
   const restartAuthentication = useCallback(() => {
@@ -473,6 +485,81 @@ export default function App({
     };
   }, [assignClientsOpen, creatingWithHeaders, mobileTab, selectedClient, month, year]);
 
+  // El aviso breve de la app (ej. cliente del Buzón no encontrado) también
+  // desaparece solo.
+  useEffect(() => {
+    if (!appNotice) return undefined;
+    const timer = setTimeout(() => setAppNotice(''), 6000);
+    return () => clearTimeout(timer);
+  }, [appNotice]);
+
+  // Tocar un aviso del Buzón: queda leído (sin confirmación) y se abre la
+  // ficha del cliente, cambiando de período si hace falta. La fila se busca
+  // cuando el período termina de cargar (PendingClientOpener).
+  const { marcarLeidos: marcarAvisosLeidos } = buzon;
+  const handleOpenAviso = useCallback(
+    (aviso) => {
+      setBuzonOpen(false);
+      if (!aviso.leido) marcarAvisosLeidos([aviso.id]);
+      if (api.hasPendingSaves()) api.flushPendingSaves().catch(() => {});
+      const anio = String(aviso.anio);
+      const mes = String(aviso.mes);
+      const samePeriod = String(year) === anio && String(month) === mes;
+      setSelectedClient(null);
+      setCreatingWithHeaders(null);
+      setAssignClientsOpen(false);
+      setIvaOpenRuc(null);
+      setMobileMenuOpen(false);
+      setMobileTab('clients');
+      if (!samePeriod) {
+        periodTabScrollRef.current = { stats: 0, clients: 0, assign: 0 };
+        setYear(anio);
+        setMonth(mes);
+      }
+      setAvisoTarget({
+        key: `${aviso.id}-${Date.now()}`,
+        anio,
+        mes,
+        fila: Number(aviso.fila),
+        cliente: aviso.cliente,
+        ruc: aviso.ruc,
+        samePeriod,
+      });
+    },
+    [marcarAvisosLeidos, year, month]
+  );
+
+  const handleAvisoClientFound = useCallback((row) => {
+    setAvisoTarget(null);
+    setSelectedClient(row);
+  }, []);
+
+  const handleAvisoClientMissing = useCallback((message) => {
+    setAvisoTarget(null);
+    setAppNotice(message);
+  }, []);
+
+  const renderBellButton = (className) => (
+    <button
+      type="button"
+      className={`${className} ${buzon.noLeidos > 0 ? 'has-unread' : ''}`}
+      onClick={() => {
+        setMobileMenuOpen(false);
+        setBuzonOpen(true);
+        buzon.refresh();
+      }}
+      title="Buzón"
+      aria-label={buzon.noLeidos > 0 ? `Buzón, ${buzon.noLeidos} sin leer` : 'Buzón'}
+    >
+      <Bell size={16} />
+      {buzon.noLeidos > 0 && (
+        <span className="rx-bell-badge" aria-hidden="true">
+          {buzon.noLeidos > 99 ? '99+' : buzon.noLeidos}
+        </span>
+      )}
+    </button>
+  );
+
   // La confirmación de PIN actualizado desaparece sola para no acumular
   // avisos en pantalla.
   useEffect(() => {
@@ -689,6 +776,7 @@ export default function App({
                 <span>Asignar</span>
               </button>
             )}
+            {!readOnlyPreview && renderBellButton('rx-bell-button')}
             <button
               type="button"
               className="real-exec-theme-button real-exec-settings-button"
@@ -802,6 +890,8 @@ export default function App({
                 <span>Asignar</span>
               </motion.button>
             )}
+
+            {user && !readOnlyPreview && renderBellButton('rx-bell-button')}
 
             {/* Píldora de usuario: visible siempre, en desktop y mobile,
                 pegada a la derecha del todo. */}
@@ -927,6 +1017,24 @@ export default function App({
           {pinChangeNotice}
         </div>
       )}
+      {appNotice && (
+        <div className="pin-change-notice" role="status">
+          {appNotice}
+        </div>
+      )}
+      <AnimatePresence>
+        {authenticated && buzonOpen && (
+          <BuzonPanel
+            avisos={buzon.avisos}
+            noLeidos={buzon.noLeidos}
+            loaded={buzon.loaded}
+            error={buzon.error}
+            onClose={() => setBuzonOpen(false)}
+            onOpenAviso={handleOpenAviso}
+            onMarkAllRead={buzon.marcarTodosLeidos}
+          />
+        )}
+      </AnimatePresence>
       {authenticated && authState.session?.pinless && (
         <div className="auth-test-banner" role="status">
           Modo de prueba: este usuario ingresó sin PIN
@@ -938,6 +1046,14 @@ export default function App({
         year={authenticated ? year : null}
         month={authenticated ? month : null}
       >
+        {authenticated && avisoTarget && (
+          <PendingClientOpener
+            key={avisoTarget.key}
+            target={avisoTarget}
+            onFound={handleAvisoClientFound}
+            onMissing={handleAvisoClientMissing}
+          />
+        )}
         <PeriodScreens
           user={user}
           authState={authState}

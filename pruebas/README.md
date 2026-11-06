@@ -35,6 +35,40 @@ original.
 | Cambio | Descripción | Estado | Pasado al original |
 | ------ | ----------- | ------ | ------------------ |
 | —      | Copia inicial del original (`5f250f6`, 05/11/2026) | — | — |
+| CAMBIO-1 | Ficha del cliente rediseñada (documentación recibida + aviso al Encargado) y Buzón con campana | En prueba | No |
+
+### CAMBIO-1 · Ficha del cliente y Buzón
+
+Archivos: `src/screens/ClientDetail.jsx`, `src/components/BuzonPanel.jsx`,
+`src/components/PendingClientOpener.jsx`, `src/hooks/useAvisos.js`,
+`src/ui-executive/recepcion-buzon.css`, `src/App.jsx`, `src/api.js`,
+`src/utils.js`, `AppsScript-Avisos.gs` (nuevo) y
+`AppsScript-Code-auth-PROPUESTA.gs` (2 líneas en `doPost`).
+`tools/smoke/server.mjs` suma `PLANILLA=mj` y el Buzón para probar sin Google.
+
+Para probarlo con tu Apps Script:
+1. En el proyecto, **+ → Secuencia de comandos** llamada `Avisos` y pegá
+   `AppsScript-Avisos.gs`.
+2. En `Code.gs`, dentro de `doPost`, justo antes de
+   `return errorResponse('Acción desconocida: ' + action, 'UNKNOWN_ACTION');`
+   agregá:
+   ```
+   const avisosResponse = handleAvisosAction(action, body, sessionUser, sessionRole);
+   if (avisosResponse) return avisosResponse;
+   ```
+3. **Implementar → Administrar implementaciones → editar → Nueva versión**.
+   La hoja `Avisos` se crea sola en la planilla de administración.
+4. En tu PC: `git pull` y `npm run dev`.
+
+Qué revisar:
+- Ficha: botones Ventas / Compras / Nota de crédito / Despacho, resumen
+  opcional de lo que llegó, Observaciones, fecha automática y
+  **Registrar recepción y avisar**. En la planilla deben quedar `✓` (o
+  `✓ resumen`), la observación y la fecha del día.
+- Datos del cliente: plegados por defecto, todos editables, Clave MH oculta.
+- Buzón: entrar con el usuario Encargado, ver la campana con el número,
+  abrir el aviso (queda leído y abre la ficha), filtros y "Marcar todo".
+
 
 ## Las tres piezas separadas
 

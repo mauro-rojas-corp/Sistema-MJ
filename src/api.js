@@ -592,6 +592,21 @@ export const api = {
     return response;
   },
 
+  // Buzón: avisos de documentación recibida para el Encargado de cada
+  // cliente (AppsScript-Avisos.gs). Cada usuario ve y marca sólo los suyos.
+  avisos: {
+    listar: async () => {
+      const data = await request({ action: 'avisosListar' });
+      return {
+        avisos: Array.isArray(data.avisos) ? data.avisos : [],
+        noLeidos: Number(data.noLeidos) || 0,
+      };
+    },
+    crear: (aviso) => request({ action: 'avisosCrear', ...aviso }),
+    marcarLeidos: (ids) => request({ action: 'avisosMarcarLeidos', ids }),
+    marcarTodosLeidos: () => request({ action: 'avisosMarcarLeidos', todos: true }),
+  },
+
   // Módulo Vencimientos IVA. Las liquidaciones se identifican por período
   // fiscal (AAAA-MM) y RUC sin DV; la lista de clientes es la de la planilla.
   iva: {

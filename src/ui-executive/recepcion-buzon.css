@@ -1,0 +1,683 @@
+/*
+ * Ficha del cliente (recepción de documentación + datos plegables), Buzón
+ * de avisos y campana de la barra superior. Usa los tokens del tema
+ * ejecutivo (--rx-*), así respeta modo claro/oscuro y tamaño de texto.
+ */
+
+/* ── Ficha del cliente ─────────────────────────────────────────────── */
+.rx-client-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.rx-card {
+  border: 1px solid var(--rx-line, #d2d3d6);
+  border-radius: 16px;
+  background: var(--rx-surface, #fff);
+  color: var(--rx-ink, #303031);
+  padding: 20px 24px;
+  box-shadow: 0 10px 30px rgba(15, 61, 70, 0.06);
+}
+
+.rx-client-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.rx-client-head-main {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.rx-client-name {
+  margin: 0;
+  font-size: var(--rx-fs-2xl, 22px);
+  font-weight: 800;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.rx-client-meta {
+  color: var(--rx-muted, #5a5e62);
+  font-size: var(--rx-fs-sm, 14px);
+}
+
+.rx-client-head-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.rx-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 16px;
+  border-radius: 12px;
+  font: inherit;
+  font-size: var(--rx-fs-sm, 14px);
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, opacity 0.15s;
+}
+
+.rx-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.rx-btn-outline {
+  border: 1px solid var(--rx-line-strong, #bcbec3);
+  background: var(--rx-surface, #fff);
+  color: var(--rx-ink, #303031);
+}
+
+.rx-btn-outline:hover:not(:disabled) {
+  border-color: var(--rx-brand, #27658d);
+  background: var(--rx-brand-soft, #e7f0f5);
+}
+
+.rx-btn-primary {
+  border: 0;
+  background: var(--rx-brand, #27658d);
+  color: #fff;
+  padding: 0 22px;
+  font-size: var(--rx-fs-md, 15px);
+}
+
+[data-theme="dark"] .rx-btn-primary {
+  color: #12212b;
+}
+
+.rx-btn-primary:hover:not(:disabled) {
+  background: var(--rx-brand-dark, #19506f);
+}
+
+.rx-btn-logo {
+  height: 18px;
+  width: auto;
+}
+
+/* Documentación recibida (destacada) */
+.rx-recepcion {
+  border: 2px solid var(--rx-brand, #27658d);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.rx-recepcion-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px 16px;
+  flex-wrap: wrap;
+}
+
+.rx-recepcion-head h3,
+.rx-datos-title h3 {
+  margin: 0;
+  font-size: var(--rx-fs-xl, 18px);
+  font-weight: 800;
+}
+
+.rx-recepcion-fecha {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  color: var(--rx-muted, #5a5e62);
+  font-size: var(--rx-fs-xs, 13px);
+}
+
+.rx-recepcion-fecha strong {
+  color: var(--rx-ink, #303031);
+}
+
+.rx-recepcion-fecha-prev {
+  color: var(--rx-subtle, #737c85);
+  font-size: var(--rx-fs-2xs, 12px);
+}
+
+.rx-doc-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.rx-doc {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.rx-doc-btn {
+  min-height: 64px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 8px 10px;
+  border: 2px dashed var(--rx-line-strong, #bcbec3);
+  border-radius: 12px;
+  background: var(--rx-surface, #fff);
+  color: var(--rx-ink, #303031);
+  font: inherit;
+  font-size: var(--rx-fs-md, 15px);
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.rx-doc-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.rx-doc-btn small {
+  color: var(--rx-subtle, #737c85);
+  font-size: var(--rx-fs-2xs, 12px);
+  font-weight: 600;
+}
+
+.rx-doc-btn:hover:not(:disabled) {
+  border-color: var(--rx-brand, #27658d);
+}
+
+.rx-doc-btn.is-received {
+  border-style: solid;
+  border-color: var(--rx-green, #15906f);
+  background: var(--rx-green-soft, #e6f6f0);
+  color: var(--rx-green, #15906f);
+}
+
+.rx-doc-btn.is-received small {
+  color: var(--rx-green, #15906f);
+}
+
+.rx-doc-btn:disabled {
+  cursor: default;
+}
+
+.rx-doc-detail,
+.rx-obs textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--rx-line-strong, #bcbec3);
+  border-radius: 10px;
+  background: var(--rx-surface, #fff);
+  color: var(--rx-ink, #303031);
+  font: inherit;
+}
+
+.rx-doc-detail {
+  min-height: 36px;
+  padding: 6px 10px;
+  font-size: var(--rx-fs-xs, 13px);
+}
+
+.rx-doc-detail-text {
+  color: var(--rx-muted, #5a5e62);
+  font-size: var(--rx-fs-xs, 13px);
+  text-align: center;
+}
+
+.rx-obs {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.rx-obs label {
+  color: var(--rx-muted, #5a5e62);
+  font-size: var(--rx-fs-xs, 13px);
+  font-weight: 700;
+}
+
+.rx-obs textarea {
+  padding: 12px;
+  font-size: var(--rx-fs-md, 15px);
+  resize: vertical;
+  min-height: 64px;
+}
+
+.rx-doc-detail:focus,
+.rx-obs textarea:focus {
+  outline: 2px solid var(--rx-brand, #27658d);
+  outline-offset: 1px;
+  border-color: transparent;
+}
+
+.rx-recepcion-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px 16px;
+  flex-wrap: wrap;
+}
+
+.rx-recepcion-aviso {
+  color: var(--rx-muted, #5a5e62);
+  font-size: var(--rx-fs-sm, 14px);
+}
+
+.rx-recepcion-aviso strong {
+  color: var(--rx-ink, #303031);
+}
+
+.rx-register-result {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: var(--rx-fs-sm, 14px);
+  font-weight: 600;
+}
+
+.rx-register-result svg {
+  flex: none;
+  margin-top: 1px;
+}
+
+.rx-register-result.is-ok {
+  background: var(--rx-green-soft, #e6f6f0);
+  color: var(--rx-green, #15906f);
+}
+
+.rx-register-result.is-aviso {
+  background: var(--rx-amber-soft, #fff3df);
+  color: var(--rx-amber, #bf7416);
+}
+
+.rx-register-result.is-error {
+  background: var(--rx-red-soft, #fff0ed);
+  color: var(--rx-red, #d05b55);
+}
+
+/* Datos del cliente (plegable) */
+.rx-datos {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.rx-datos-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.rx-datos-title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.rx-datos-resumen {
+  overflow: hidden;
+  color: var(--rx-muted, #5a5e62);
+  font-size: var(--rx-fs-xs, 13px);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rx-datos-toggle-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex: none;
+  color: var(--rx-brand, #27658d);
+  font-size: var(--rx-fs-sm, 14px);
+  font-weight: 700;
+}
+
+.rx-datos-toggle-label svg {
+  transition: transform 0.2s;
+}
+
+.rx-datos-toggle-label svg.is-open {
+  transform: rotate(180deg);
+}
+
+.rx-datos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 12px 16px;
+}
+
+.rx-client-detail .rx-datos-card.field-card {
+  padding: 10px 12px;
+  border-radius: 12px;
+  box-shadow: none;
+  min-width: 0;
+}
+
+.rx-client-detail .rx-datos-card .field-label {
+  font-size: var(--rx-fs-2xs, 12px);
+}
+
+.rx-client-detail .rx-datos-card .field-input-row {
+  min-width: 0;
+}
+
+.rx-client-detail .rx-datos-card .field-input {
+  min-width: 0;
+}
+
+.rx-client-detail .field-save-btn.rx-clave-toggle {
+  border: 1px solid var(--rx-line, #d2d3d6);
+  background: var(--rx-soft, #f4f5f6);
+  color: var(--rx-muted, #5a5e62);
+}
+
+@media (max-width: 860px) {
+  .rx-doc-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .rx-card {
+    padding: 16px;
+  }
+
+  .rx-datos-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .rx-recepcion-fecha {
+    align-items: flex-start;
+  }
+
+  .rx-recepcion-foot .rx-btn-primary {
+    width: 100%;
+  }
+
+  .rx-client-head-actions,
+  .rx-client-head-actions .rx-btn {
+    width: 100%;
+  }
+}
+
+/* ── Campana de la barra superior ──────────────────────────────────── */
+.rx-bell-button {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  min-height: 36px;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.045);
+  color: #d2d3d6;
+  cursor: pointer;
+}
+
+.rx-bell-button:hover,
+.rx-bell-button.has-unread {
+  border-color: rgba(111, 165, 195, 0.35);
+  color: #ffffff;
+}
+
+.rx-bell-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  box-sizing: border-box;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: #d05b55;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: 0 0 0 2px #1c1f23;
+}
+
+/* Variante para la barra clásica */
+.app-navbar .rx-bell-button {
+  border-color: var(--border-light, #d2d3d6);
+  background: transparent;
+  color: inherit;
+}
+
+@media (max-width: 640px) {
+  .rx-bell-button {
+    width: 34px;
+  }
+}
+
+/* ── Buzón (panel lateral) ─────────────────────────────────────────── */
+.rx-buzon-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: rgba(15, 20, 25, 0.45);
+}
+
+.rx-buzon-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1201;
+  width: min(420px, 100vw);
+  display: flex;
+  flex-direction: column;
+  background: var(--rx-surface, #fff);
+  color: var(--rx-ink, #303031);
+  border-left: 1px solid var(--rx-line, #d2d3d6);
+  box-shadow: -16px 0 40px rgba(0, 0, 0, 0.18);
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.rx-buzon-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 20px 16px 8px 20px;
+}
+
+.rx-buzon-head h2 {
+  margin: 0;
+  font-size: var(--rx-fs-2xl, 22px);
+  font-weight: 800;
+}
+
+.rx-buzon-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.rx-buzon-link {
+  min-height: 44px;
+  padding: 0 8px;
+  border: 0;
+  background: none;
+  color: var(--rx-brand, #27658d);
+  font: inherit;
+  font-size: var(--rx-fs-sm, 14px);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.rx-buzon-link:disabled {
+  color: var(--rx-subtle, #737c85);
+  cursor: default;
+}
+
+.rx-buzon-close {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--rx-muted, #5a5e62);
+  cursor: pointer;
+}
+
+.rx-buzon-close:hover {
+  background: var(--rx-soft, #f4f5f6);
+}
+
+.rx-buzon-filters {
+  display: flex;
+  gap: 8px;
+  padding: 4px 20px 12px;
+}
+
+.rx-buzon-chip {
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid var(--rx-line-strong, #bcbec3);
+  border-radius: 999px;
+  background: var(--rx-surface, #fff);
+  color: var(--rx-ink, #303031);
+  font: inherit;
+  font-size: var(--rx-fs-sm, 14px);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.rx-buzon-chip.is-active {
+  border-color: var(--rx-brand, #27658d);
+  background: var(--rx-brand, #27658d);
+  color: #fff;
+}
+
+[data-theme="dark"] .rx-buzon-chip.is-active {
+  color: #12212b;
+}
+
+.rx-buzon-list {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-bottom: 24px;
+}
+
+.rx-buzon-day {
+  padding: 14px 20px 8px;
+  color: var(--rx-muted, #5a5e62);
+  font-size: var(--rx-fs-2xs, 12px);
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.rx-buzon-item {
+  width: 100%;
+  display: flex;
+  gap: 12px;
+  padding: 14px 20px;
+  border: 0;
+  border-top: 1px solid var(--rx-line, #d2d3d6);
+  background: var(--rx-surface, #fff);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.rx-buzon-item:hover {
+  background: var(--rx-soft, #f4f5f6);
+}
+
+.rx-buzon-item.is-unread {
+  background: var(--rx-brand-soft, #e7f0f5);
+}
+
+.rx-buzon-dot {
+  flex: none;
+  width: 10px;
+  height: 10px;
+  margin-top: 6px;
+  border-radius: 50%;
+}
+
+.rx-buzon-item.is-unread .rx-buzon-dot {
+  background: var(--rx-brand, #27658d);
+}
+
+.rx-buzon-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.rx-buzon-title {
+  font-size: var(--rx-fs-md, 15px);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.rx-buzon-item.is-unread .rx-buzon-title {
+  font-weight: 800;
+}
+
+.rx-buzon-docs {
+  color: var(--rx-ink, #303031);
+  font-size: var(--rx-fs-sm, 14px);
+  overflow-wrap: anywhere;
+}
+
+.rx-buzon-meta {
+  color: var(--rx-muted, #5a5e62);
+  font-size: var(--rx-fs-xs, 13px);
+}
+
+.rx-buzon-empty,
+.rx-buzon-error {
+  margin: 24px 20px;
+  color: var(--rx-muted, #5a5e62);
+  font-size: var(--rx-fs-sm, 14px);
+  text-align: center;
+}
+
+.rx-buzon-error {
+  color: var(--rx-red, #d05b55);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

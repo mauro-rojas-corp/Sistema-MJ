@@ -18,9 +18,11 @@ const PRUEBAS_USUARIOS = [
   ['Usuario Pruebas', 'USUARIO'],
 ];
 const PRUEBAS_CLIENTES_POR_MES = 25;
+// Mismas columnas que la planilla real del estudio.
 const PRUEBAS_ENCABEZADOS = [
-  'Razón Social', 'R.U.C.', 'Clave MH', 'Vencimiento', 'Encargado',
-  'Presentado', 'Presentado por:', 'Archivado', 'Archivado por:', 'Observaciones',
+  'Vencimiento', 'CLIENTE O RAZON SOCIAL', 'R.U.C.', 'D.V.', 'CLAVE MH', 'ZONA', 'Nº DE CASA', 'BARRIO',
+  'CONTACTO', 'TELEFONO', 'ESTADO', 'OBSERVACIONES', 'VENTAS', 'Compras', 'Nota de Credito', 'Despacho ',
+  'Fecha', 'Archivado por:', 'Encargado',
 ];
 
 function instalarEntornoPruebas() {
@@ -91,24 +93,35 @@ function mostrarDatosEntornoPruebas() {
 function clientesFicticios_(mesIndex) {
   const nombres = ['Comercial', 'Ferretería', 'Distribuidora', 'Panadería', 'Transportes', 'Farmacia', 'Consultora', 'Librería'];
   const lugares = ['Sur', 'del Este', 'Ñandutí', 'Guaraní', 'Central', 'Paraná', 'Chaco', 'Ypacaraí'];
+  const zonas = ['Centro', 'Norte', 'Sur', 'Este'];
+  const barrios = ['San Vicente', 'Villa Morra', 'Recoleta', 'Sajonia', 'Trinidad'];
   const encargados = PRUEBAS_USUARIOS.map(function (u) { return u[0]; });
   const filas = [];
   for (let i = 0; i < PRUEBAS_CLIENTES_POR_MES; i++) {
-    // Los meses anteriores al último quedan mayormente presentados.
-    const presentado = mesIndex < PRUEBAS_MESES.length - 1 ? i % 5 !== 0 : i % 3 === 0;
-    const archivado = presentado && i % 4 === 0;
+    // Los meses anteriores al último quedan mayormente con documentación.
+    const recibido = mesIndex < PRUEBAS_MESES.length - 1 ? i % 5 !== 0 : i % 3 === 0;
+    const archivado = recibido && i % 4 === 0;
     const quien = encargados[i % encargados.length];
     filas.push([
-      'PRUEBA ' + nombres[i % nombres.length] + ' ' + lugares[(i * 3) % lugares.length] + ' ' + (i + 1) + ' S.A.',
-      (80000000 + i * 37) + '-' + (i % 10),
-      i % 6 === 5 ? '' : 'CLAVE-FICTICIA-' + (i + 1),
       'Día ' + (((i * 3) % 25) + 1),
-      i % 7 === 6 ? '' : quien,
-      presentado ? 'SI' : 'NO',
-      presentado ? quien : '',
-      archivado ? 'SI' : 'NO',
-      archivado ? quien : '',
+      'PRUEBA ' + nombres[i % nombres.length] + ' ' + lugares[(i * 3) % lugares.length] + ' ' + (i + 1) + ' S.A.',
+      String(80000000 + i * 37),
+      String(i % 10),
+      i % 6 === 5 ? '' : 'CLAVE-FICTICIA-' + (i + 1),
+      zonas[i % zonas.length],
+      String(100 + i),
+      barrios[i % barrios.length],
+      'Contacto ' + (i + 1),
+      '0981 ' + String(100000 + i * 13),
+      'ACTIVO',
       i % 6 === 0 ? 'Cliente de prueba con IVA mensual' : '',
+      recibido ? '\u2713' : '',
+      recibido ? '\u2713 12 facturas' : '',
+      '',
+      recibido && i % 2 === 0 ? '\u2713' : '',
+      '',
+      archivado ? quien : '',
+      i % 7 === 6 ? '' : quien,
     ]);
   }
   return filas;

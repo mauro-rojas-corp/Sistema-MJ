@@ -1613,5 +1613,9 @@ function doPost(e) {
   const marcacionesResponse = handleMarcacionesAction(action, body, sessionUser, sessionRole);
   if (marcacionesResponse) return marcacionesResponse;
 
+  // Módulo Avisos / Buzón (archivo AppsScript-Avisos.gs).
+  const avisosResponse = handleAvisosAction(action, body, sessionUser, sessionRole);
+  if (avisosResponse) return avisosResponse;
+
   return errorResponse('Acción desconocida: ' + action, 'UNKNOWN_ACTION');
 }

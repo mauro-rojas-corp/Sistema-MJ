@@ -471,3 +471,101 @@ export function findClaveMarangatuColumn(headers) {
   });
   return found || null;
 }
+
+// --- Recepción de documentación (ficha del cliente) ---------------------
+// Columnas de documentos que se registran como recibidos/pendientes. Se
+// detectan por nombre, tolerando mayúsculas, tildes y espacios de más
+// (la planilla real tiene "VENTAS", "Compras", "Nota de Credito" y
+// "Despacho " con un espacio al final).
+const DOCUMENT_COLUMN_DEFS = [
+  { key: 'ventas', label: 'Ventas', test: (c) => c === 'ventas' || c === 'venta' },
+  { key: 'compras', label: 'Compras', test: (c) => c === 'compras' || c === 'compra' },
+  {
+    key: 'nota-credito',
+    label: 'Nota de crédito',
+    test: (c) => c === 'nc' || c.startsWith('notadecredito') || c.startsWith('notascredito') || c.startsWith('notacredito') || c.startsWith('notasdecredito'),
+  },
+  { key: 'despacho', label: 'Despacho', test: (c) => c === 'despacho' || c === 'despachos' },
+];
+
+export function findDocumentColumns(headers) {
+  if (!headers || !headers.length) return [];
+  const result = [];
+  DOCUMENT_COLUMN_DEFS.forEach((def) => {
+    const column = headers.find((h) => def.test(compactHeader(h)));
+    if (column) result.push({ key: def.key, label: def.label, column });
+  });
+  return result;
+}
+
+export function findObservacionesColumn(headers) {
+  if (!headers || !headers.length) return null;
+  return headers.find((h) => {
+    const comp = compactHeader(h);
+    return comp.startsWith('observ') || comp === 'obs' || comp === 'notas' || comp === 'nota';
+  }) || null;
+}
+
+// "Fecha" de recepción: la columna llamada exactamente Fecha (o Fecha de
+// recepción). Nunca la del vencimiento.
+export function findFechaRecepcionColumn(headers) {
+  if (!headers || !headers.length) return null;
+  return headers.find((h) => {
+    const comp = compactHeader(h);
+    return comp === 'fecha' || comp === 'fecharecepcion' || comp === 'fechaderecepcion' || comp === 'fecharecibido';
+  }) || null;
+}
+
+// Un documento cuenta como recibido si la celda tiene un check, SI, X, TRUE
+// (casilla de verificación) o cualquier resumen escrito; está pendiente si
+// está vacía o dice NO/FALSE.
+const DOC_PENDING_PATTERN = /^(no|n|false|falso|0|-|pendiente|falta|faltan)$/i;
+const DOC_MARK_PATTERN = /^(?:[✓✔✅☑√]️?|si|sí|x|ok|true|verdadero|recibido)\s*[-:.,]?\s*/i;
+
+export function isDocumentReceived(value) {
+  if (value === true) return true;
+  if (value === false || value === null || value === undefined) return false;
+  const text = String(value).trim();
+  if (!text) return false;
+  return !DOC_PENDING_PATTERN.test(text);
+}
+
+// Resumen escrito junto al check ("✓ 25 facturas" -> "25 facturas").
+export function getDocumentDetail(value) {
+  if (!isDocumentReceived(value) || typeof value === 'boolean') return '';
+  let text = String(value).trim();
+  let previous;
+  do {
+    previous = text;
+    text = text.replace(DOC_MARK_PATTERN, '').trim();
+  } while (text && text !== previous);
+  return text;
+}
+
+// Valor a escribir en la celda del documento. Con casillas de verificación
+// (valores booleanos) se escribe true/false; si no, un check con el resumen.
+export function buildDocumentValue(received, detail, booleanMode) {
+  if (booleanMode) return Boolean(received);
+  if (!received) return '';
+  const clean = String(detail || '').trim();
+  return clean ? `✓ ${clean}` : '✓';
+}
+
+const pad2 = (n) => String(n).padStart(2, '0');
+
+export function formatDateDMY(date) {
+  return `${pad2(date.getDate())}/${pad2(date.getMonth() + 1)}/${date.getFullYear()}`;
+}
+
+// Las fechas de Sheets llegan como texto ISO ("2026-11-06T03:00:00.000Z");
+// se muestran como dd/mm/aaaa. Cualquier otro valor se devuelve tal cual.
+export function formatSheetValue(value) {
+  if (value === null || value === undefined) return '';
+  if (typeof value === 'boolean') return value ? 'Sí' : 'No';
+  const text = String(value).trim();
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(text)) {
+    const date = new Date(text);
+    if (!Number.isNaN(date.getTime())) return formatDateDMY(date);
+  }
+  return text;
+}
