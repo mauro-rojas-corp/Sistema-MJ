@@ -189,8 +189,10 @@
 .iva-rows td { padding: 6px 12px; height: 54px; border-bottom: 1px solid var(--rx-line); }
 .iva-rows tr.r { cursor: pointer; }
 .iva-rows tr.r:hover td { background: var(--rx-soft); }
-.iva-rows td.band { padding: 0; width: 8px; }
-.iva-rows td.band span { display: block; width: 8px; height: 54px; }
+/* La franja de color ocupa toda la altura de la fila, aunque la fila crezca
+   (nombre largo en dos líneas, etiquetas, tamaño de texto más grande). */
+.iva-rows td.band { position: relative; padding: 0; width: 8px; min-width: 8px; }
+.iva-rows td.band span { position: absolute; top: 0; bottom: -1px; left: 0; width: 8px; }
 .iva-rows .num { text-align: right; white-space: nowrap; }
 .iva-rows .name { font-weight: 600; }
 
