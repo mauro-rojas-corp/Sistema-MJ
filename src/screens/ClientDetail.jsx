@@ -13,7 +13,7 @@ import {
   findObservacionesColumn,
   findFechaRecepcionColumn,
   isDocumentReceived,
-  getDocumentDetail,
+  getDocumentItems,
   buildDocumentValue,
   formatDateDMY,
   formatSheetValue,
@@ -56,6 +56,8 @@ import {
   Send,
   Loader2,
   Clock,
+  Plus,
+  X,
 } from 'lucide-react';
 
 // Cuánto queda visible el ✓ "Guardado" después de pintar el cambio.
@@ -152,7 +154,8 @@ export default function ClientDetail({
     documentColumns.forEach((d) => {
       docs[d.column] = {
         received: isDocumentReceived(client[d.column]),
-        detail: getDocumentDetail(client[d.column]),
+        items: getDocumentItems(client[d.column]),
+        input: '',
       };
     });
     return {
@@ -354,13 +357,40 @@ export default function ClientDetail({
     }));
   }
 
-  function setDocDetail(column, detail) {
+  const MAX_ITEMS = 40;
+
+  function setDocInput(column, input) {
     setRegisterResult(null);
     setDraft((prev) => ({
       ...prev,
-      docs: { ...prev.docs, [column]: { ...prev.docs[column], detail } },
+      docs: { ...prev.docs, [column]: { ...prev.docs[column], input } },
     }));
   }
+
+  // Enter (o el botón +) suma lo escrito como un ítem más de ese documento.
+  function addDocItem(column) {
+    setRegisterResult(null);
+    setDraft((prev) => {
+      const doc = prev.docs[column];
+      const item = doc.input.trim();
+      if (!item || doc.items.length >= MAX_ITEMS) return prev;
+      return { ...prev, docs: { ...prev.docs, [column]: { ...doc, items: [...doc.items, item], input: '' } } };
+    });
+  }
+
+  function removeDocItem(column, index) {
+    setRegisterResult(null);
+    setDraft((prev) => {
+      const doc = prev.docs[column];
+      return {
+        ...prev,
+        docs: { ...prev.docs, [column]: { ...doc, items: doc.items.filter((_, i) => i !== index) } },
+      };
+    });
+  }
+
+  // Ítems finales: lo agregado más lo que haya quedado escrito sin Enter.
+  const finalItems = (doc) => (doc.input.trim() ? [...doc.items, doc.input.trim()] : doc.items);
 
   async function registerReception() {
     if (!canRegister) return;
@@ -369,14 +399,25 @@ export default function ClientDetail({
     setError('');
 
     const updates = {};
+    const itemsPorDoc = {};
     documentColumns.forEach((d) => {
       const doc = draft.docs[d.column];
-      const nextValue = buildDocumentValue(doc.received, doc.detail, booleanDocs);
+      const items = booleanDocs ? [] : finalItems(doc);
+      itemsPorDoc[d.column] = items;
+      const nextValue = buildDocumentValue(doc.received, items, booleanDocs);
       const current = values[d.column];
       const unchanged =
         isDocumentReceived(current) === doc.received &&
-        (booleanDocs || getDocumentDetail(current) === doc.detail.trim());
+        (booleanDocs || getDocumentItems(current).join('\n') === items.join('\n'));
       if (!unchanged) updates[d.column] = nextValue;
+    });
+    // Lo escrito sin Enter queda incorporado a la lista.
+    setDraft((prev) => {
+      const docs = { ...prev.docs };
+      documentColumns.forEach((d) => {
+        if (!booleanDocs) docs[d.column] = { ...docs[d.column], items: itemsPorDoc[d.column], input: '' };
+      });
+      return { ...prev, docs };
     });
     if (observacionesColumn && observacionesDraft !== formatSheetValue(values[observacionesColumn])) {
       updates[observacionesColumn] = observacionesDraft;
@@ -435,8 +476,8 @@ export default function ClientDetail({
           cliente: String(clientName),
           ruc: rucText,
           documentos: receivedDocs.map((d) => {
-            const detail = booleanDocs ? '' : draft.docs[d.column].detail.trim();
-            return detail ? `${d.label} (${detail})` : d.label;
+            const items = itemsPorDoc[d.column] || [];
+            return items.length ? `${d.label} (${items.join(', ')})` : d.label;
           }),
           nota: observacionesDraft,
           vencimiento: venc.fecha
@@ -761,11 +802,11 @@ export default function ClientDetail({
         </div>
       )}
 
-      {/* Documentación recibida: lo que más se edita, arriba y destacado */}
+      {/* Registro de documentación: lo que más se edita, arriba y destacado */}
       {hasReception && (
         <section className="rx-card rx-recepcion" aria-labelledby="rx-recepcion-title">
           <div className="rx-recepcion-head">
-            <h3 id="rx-recepcion-title">Documentación recibida</h3>
+            <h3 id="rx-recepcion-title">Registro de documentación</h3>
             {fechaColumn && (
               <span className="rx-recepcion-fecha">
                 <span>Fecha: <strong>hoy, {hoy}</strong> (se completa sola)</span>
@@ -812,20 +853,56 @@ export default function ClientDetail({
                     </span>
                     <small>{received ? 'Recibido' : 'Pendiente'}</small>
                   </button>
-                  {received && !booleanDocs && !readOnlyPreview && (
-                    <input
-                      type="text"
-                      className="rx-doc-detail"
-                      placeholder="Qué llegó (opcional)"
-                      aria-label={`Resumen de ${d.label}`}
-                      value={doc.detail}
-                      maxLength={120}
-                      disabled={registering}
-                      onChange={(e) => setDocDetail(d.column, e.target.value)}
-                    />
+                  {received && !booleanDocs && doc.items.length > 0 && (
+                    <ul className="rx-doc-items" aria-label={`${d.label}: lo que llegó`}>
+                      {doc.items.map((item, i) => (
+                        <li key={`${i}-${item}`}>
+                          <span>{item}</span>
+                          {!readOnlyPreview && (
+                            <button
+                              type="button"
+                              className="rx-doc-item-remove"
+                              aria-label={`Quitar ${item}`}
+                              title="Quitar"
+                              disabled={registering}
+                              onClick={() => removeDocItem(d.column, i)}
+                            >
+                              <X size={14} aria-hidden="true" />
+                            </button>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
                   )}
-                  {received && (booleanDocs || readOnlyPreview) && doc.detail && (
-                    <span className="rx-doc-detail-text">{doc.detail}</span>
+                  {received && !booleanDocs && !readOnlyPreview && (
+                    <div className="rx-doc-add">
+                      <input
+                        type="text"
+                        className="rx-doc-detail"
+                        placeholder="Qué llegó + Enter"
+                        aria-label={`Agregar a ${d.label}`}
+                        value={doc.input}
+                        maxLength={120}
+                        disabled={registering || doc.items.length >= MAX_ITEMS}
+                        onChange={(e) => setDocInput(d.column, e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            addDocItem(d.column);
+                          }
+                        }}
+                      />
+                      <button
+                        type="button"
+                        className="rx-doc-add-btn"
+                        aria-label={`Agregar a ${d.label} (botón)`}
+                        title="Agregar"
+                        disabled={registering || !doc.input.trim()}
+                        onClick={() => addDocItem(d.column)}
+                      >
+                        <Plus size={16} aria-hidden="true" />
+                      </button>
+                    </div>
                   )}
                 </div>
               );

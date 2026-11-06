@@ -530,10 +530,8 @@ export function isDocumentReceived(value) {
   return !DOC_PENDING_PATTERN.test(text);
 }
 
-// Resumen escrito junto al check ("✓ 25 facturas" -> "25 facturas").
-export function getDocumentDetail(value) {
-  if (!isDocumentReceived(value) || typeof value === 'boolean') return '';
-  let text = String(value).trim();
+function stripDocumentMarks(line) {
+  let text = String(line).trim();
   let previous;
   do {
     previous = text;
@@ -542,13 +540,31 @@ export function getDocumentDetail(value) {
   return text;
 }
 
+// Lo que llegó de un documento, un ítem por línea de la celda
+// ("✓ Factura 1\n✓ Factura 2" -> ["Factura 1", "Factura 2"]).
+export function getDocumentItems(value) {
+  if (!isDocumentReceived(value) || typeof value === 'boolean') return [];
+  return String(value)
+    .split(/\r?\n/)
+    .map(stripDocumentMarks)
+    .filter(Boolean);
+}
+
+// Resumen en una línea ("Factura 1, Factura 2").
+export function getDocumentDetail(value) {
+  return getDocumentItems(value).join(', ');
+}
+
 // Valor a escribir en la celda del documento. Con casillas de verificación
-// (valores booleanos) se escribe true/false; si no, un check con el resumen.
-export function buildDocumentValue(received, detail, booleanMode) {
+// (valores booleanos) se escribe true/false; si no, un check por cada ítem,
+// uno debajo del otro dentro de la celda ("✓" solo si no se detalló nada).
+export function buildDocumentValue(received, items, booleanMode) {
   if (booleanMode) return Boolean(received);
   if (!received) return '';
-  const clean = String(detail || '').trim();
-  return clean ? `✓ ${clean}` : '✓';
+  const list = (Array.isArray(items) ? items : [items])
+    .map((item) => String(item ?? '').trim())
+    .filter(Boolean);
+  return list.length ? list.map((item) => `✓ ${item}`).join('\n') : '✓';
 }
 
 const pad2 = (n) => String(n).padStart(2, '0');

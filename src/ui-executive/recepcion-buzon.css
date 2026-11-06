@@ -262,10 +262,78 @@
   font-size: var(--rx-fs-xs, 13px);
 }
 
-.rx-doc-detail-text {
-  color: var(--rx-muted, #5a5e62);
+.rx-doc-items {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rx-doc-items li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  min-height: 30px;
+  padding: 2px 4px 2px 10px;
+  border-radius: 8px;
+  background: var(--rx-soft, #f4f5f6);
   font-size: var(--rx-fs-xs, 13px);
-  text-align: center;
+}
+
+.rx-doc-items li span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.rx-doc-item-remove,
+.rx-doc-add-btn {
+  flex: none;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--rx-muted, #5a5e62);
+  cursor: pointer;
+}
+
+.rx-doc-item-remove {
+  width: 26px;
+  height: 26px;
+}
+
+.rx-doc-item-remove:hover:not(:disabled) {
+  background: var(--rx-red-soft, #fff0ed);
+  color: var(--rx-red, #d05b55);
+}
+
+.rx-doc-add {
+  display: flex;
+  gap: 4px;
+}
+
+.rx-doc-add .rx-doc-detail {
+  flex: 1;
+  min-width: 0;
+}
+
+.rx-doc-add-btn {
+  width: 36px;
+  border: 1px solid var(--rx-line-strong, #bcbec3);
+}
+
+.rx-doc-add-btn:hover:not(:disabled) {
+  border-color: var(--rx-brand, #27658d);
+  color: var(--rx-brand, #27658d);
+}
+
+.rx-doc-add-btn:disabled,
+.rx-doc-item-remove:disabled {
+  cursor: default;
+  opacity: 0.45;
 }
 
 .rx-obs {
