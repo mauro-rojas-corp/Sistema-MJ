@@ -233,7 +233,12 @@ export default function ClientDetail({
   // vencimiento (el 7/11 para VENC. 0; el 8/11 ya es 1 día de retraso). Si ya
   // se registró la llegada (columna Fecha), el retraso queda fijo en esa
   // fecha; si todavía no llegaron, se cuenta hasta hoy.
-  const llegada = fechaColumn ? parseSheetDate(values[fechaColumn]) : null;
+  // La documentación del período llega desde el 1° del mes del vencimiento
+  // (papeles de septiembre: desde el 1/10). Una fecha anterior es de otro
+  // mes (por ejemplo, quedó al copiar la planilla) y no cuenta como llegada.
+  const fechaCelda = fechaColumn ? parseSheetDate(values[fechaColumn]) : null;
+  const inicioRecepcion = venc.fecha ? new Date(venc.fecha.getFullYear(), venc.fecha.getMonth(), 1) : null;
+  const llegada = fechaCelda && (!inicioRecepcion || fechaCelda >= inicioRecepcion) ? fechaCelda : null;
   const retraso = venc.fecha
     ? llegada
       ? { tipo: 'llego', dias: diasRetraso(venc.fecha, llegada), fecha: llegada }
