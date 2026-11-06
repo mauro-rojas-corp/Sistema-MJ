@@ -341,6 +341,16 @@ export default function ClientDetail({
       return;
     }
 
+    // La fila se pinta de B a K con el color del Vencimiento (columna A).
+    // Si no se puede, la recepción igual quedó registrada: sólo se avisa.
+    let notaColor = '';
+    try {
+      const pintura = await api.recepcion.pintarFila({ year, sheet: month, row: client._row });
+      if (pintura && pintura.pintado === false) notaColor = ` No se pintó la fila: ${pintura.motivo}`;
+    } catch (err) {
+      notaColor = ` No se pudo pintar la fila: ${err.message}`;
+    }
+
     let result;
     if (!avisaAlEncargado) {
       result = {
@@ -372,6 +382,9 @@ export default function ClientDetail({
           texto: `La recepción quedó registrada, pero no se pudo avisar a ${encargado}: ${err.message}`,
         };
       }
+    }
+    if (notaColor) {
+      result = { tipo: result.tipo === 'ok' ? 'aviso' : result.tipo, texto: result.texto + notaColor };
     }
     if (!mountedRef.current) return;
     setRegistering(false);

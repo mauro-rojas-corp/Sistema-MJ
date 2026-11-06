@@ -607,6 +607,14 @@ export const api = {
     marcarTodosLeidos: () => request({ action: 'avisosMarcarLeidos', todos: true }),
   },
 
+  // Al registrar la recepción de documentación, pinta la fila del cliente
+  // (B a K) con el color de su Vencimiento (columna A). Resuelve
+  // { pintado, color?, motivo? }.
+  recepcion: {
+    pintarFila: ({ year, sheet, row }) =>
+      request({ action: 'recepcionPintarFila', year, sheet, row }),
+  },
+
   // Módulo Vencimientos IVA. Las liquidaciones se identifican por período
   // fiscal (AAAA-MM) y RUC sin DV; la lista de clientes es la de la planilla.
   iva: {

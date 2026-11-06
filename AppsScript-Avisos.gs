@@ -15,6 +15,9 @@
  *        if (avisosResponse) return avisosResponse;
  *   3. Implementar > Administrar implementaciones > editar > Nueva versión.
  *
+ * Además, al registrar la recepción, pinta la fila del cliente (B a K) con el
+ * color del Vencimiento de la columna A (acción recepcionPintarFila).
+ *
  * Hoja "Avisos" en la planilla de administración (se crea sola), una fila por
  * aviso. Usa funciones de Code.gs: getAdminSpreadsheet, getAllowedUsers,
  * canonicalUserName, jsonResponse y errorResponse.
@@ -240,11 +243,108 @@ function handleAvisosMarcarLeidos(body, sessionUser) {
   return jsonResponse({ ok: true, marcados: marcados });
 }
 
+// ── PINTAR LA FILA AL REGISTRAR LA RECEPCIÓN ─────────────────────────────
+// Al registrar la documentación recibida, la fila del cliente se pinta de B
+// a K con el color que tiene su Vencimiento en la columna A. El color sale,
+// en este orden, de: el relleno de la celda A, una regla de formato
+// condicional que aplique a esa celda, u otra fila con el mismo vencimiento
+// que tenga relleno.
+const RECEPCION_COLOR_COL_REFERENCIA = 1; // A
+const RECEPCION_COLOR_COL_DESDE = 2;      // B
+const RECEPCION_COLOR_COL_HASTA = 11;     // K
+
+function recepcionColorValido_(color) {
+  const c = String(color || '').trim().toLowerCase();
+  return /^#[0-9a-f]{6}$/.test(c) && c !== '#ffffff';
+}
+
+function recepcionCumpleCondicion_(condicion, valor) {
+  const tipos = SpreadsheetApp.BooleanCriteria;
+  const tipo = condicion.getCriteriaType();
+  const criterios = condicion.getCriteriaValues() || [];
+  const texto = normalizeText(valor);
+  const c0 = normalizeText(criterios[0]);
+  const numero = Number(String(valor).replace(/[^0-9.,-]/g, '').replace(',', '.'));
+  switch (tipo) {
+    case tipos.TEXT_EQUAL_TO: return texto === c0;
+    case tipos.TEXT_CONTAINS: return texto.indexOf(c0) !== -1;
+    case tipos.TEXT_NOT_CONTAINS: return texto.indexOf(c0) === -1;
+    case tipos.TEXT_STARTS_WITH: return texto.indexOf(c0) === 0;
+    case tipos.TEXT_ENDS_WITH: return c0 !== '' && texto.slice(-c0.length) === c0;
+    case tipos.NUMBER_EQUAL_TO: return !isNaN(numero) && numero === Number(criterios[0]);
+    case tipos.NUMBER_BETWEEN: return !isNaN(numero) && numero >= Number(criterios[0]) && numero <= Number(criterios[1]);
+    case tipos.NUMBER_GREATER_THAN: return !isNaN(numero) && numero > Number(criterios[0]);
+    case tipos.NUMBER_GREATER_THAN_OR_EQUAL_TO: return !isNaN(numero) && numero >= Number(criterios[0]);
+    case tipos.NUMBER_LESS_THAN: return !isNaN(numero) && numero < Number(criterios[0]);
+    case tipos.NUMBER_LESS_THAN_OR_EQUAL_TO: return !isNaN(numero) && numero <= Number(criterios[0]);
+    default: return false; // fórmulas personalizadas y otros tipos no se evalúan
+  }
+}
+
+function recepcionColorDeVencimiento_(sheet, row) {
+  const celda = sheet.getRange(row, RECEPCION_COLOR_COL_REFERENCIA);
+  const relleno = celda.getBackground();
+  if (recepcionColorValido_(relleno)) return { color: relleno, origen: 'celda' };
+
+  const valor = celda.getDisplayValue();
+  const reglas = sheet.getConditionalFormatRules ? sheet.getConditionalFormatRules() : [];
+  for (let i = 0; i < reglas.length; i++) {
+    const condicion = reglas[i].getBooleanCondition();
+    if (!condicion) continue;
+    const color = condicion.getBackground();
+    if (!recepcionColorValido_(color)) continue;
+    const aplica = reglas[i].getRanges().some(function (r) {
+      return row >= r.getRow() && row <= r.getLastRow() &&
+        RECEPCION_COLOR_COL_REFERENCIA >= r.getColumn() && RECEPCION_COLOR_COL_REFERENCIA <= r.getLastColumn();
+    });
+    if (aplica && recepcionCumpleCondicion_(condicion, valor)) return { color: color, origen: 'formato condicional' };
+  }
+
+  // Otra fila con el mismo vencimiento que sí tenga relleno en A.
+  const lastRow = sheet.getLastRow();
+  if (lastRow >= 2 && normalizeText(valor)) {
+    const valores = sheet.getRange(2, RECEPCION_COLOR_COL_REFERENCIA, lastRow - 1, 1).getDisplayValues();
+    const fondos = sheet.getRange(2, RECEPCION_COLOR_COL_REFERENCIA, lastRow - 1, 1).getBackgrounds();
+    for (let j = 0; j < valores.length; j++) {
+      if (normalizeText(valores[j][0]) === normalizeText(valor) && recepcionColorValido_(fondos[j][0])) {
+        return { color: fondos[j][0], origen: 'otra fila con el mismo vencimiento' };
+      }
+    }
+  }
+  return null;
+}
+
+function handleRecepcionPintarFila(body, sessionUser) {
+  const sheet = getMonthSheet(body.year, body.sheet);
+  if (!sheet) {
+    return errorResponse('Año/mes "' + body.year + ' / ' + body.sheet + '" no válido', 'SHEET_NOT_FOUND');
+  }
+  const row = Number(body.row);
+  if (!(row >= 2) || row > sheet.getLastRow()) return errorResponse('Fila inválida', 'ROW_INVALID');
+
+  const encontrado = recepcionColorDeVencimiento_(sheet, row);
+  if (!encontrado) {
+    return jsonResponse({
+      ok: true,
+      pintado: false,
+      motivo: 'El Vencimiento de la columna A no tiene un color definido.'
+    });
+  }
+
+  const ancho = RECEPCION_COLOR_COL_HASTA - RECEPCION_COLOR_COL_DESDE + 1;
+  const destino = sheet.getRange(row, RECEPCION_COLOR_COL_DESDE, 1, ancho);
+  const anterior = destino.getBackground();
+  destino.setBackground(encontrado.color);
+  logChange(sessionUser, body.year, body.sheet, row, 'Color B:K', anterior, encontrado.color);
+  return jsonResponse({ ok: true, pintado: true, color: encontrado.color, origen: encontrado.origen });
+}
+
 function handleAvisosAction(action, body, sessionUser, sessionRole) {
   const routes = {
     avisosCrear: [function () { return handleAvisosCrear(body, sessionUser); }, 'AVISOS_CREAR_ERROR'],
     avisosListar: [function () { return handleAvisosListar(sessionUser); }, 'AVISOS_LISTAR_ERROR'],
-    avisosMarcarLeidos: [function () { return handleAvisosMarcarLeidos(body, sessionUser); }, 'AVISOS_LEIDOS_ERROR']
+    avisosMarcarLeidos: [function () { return handleAvisosMarcarLeidos(body, sessionUser); }, 'AVISOS_LEIDOS_ERROR'],
+    recepcionPintarFila: [function () { return handleRecepcionPintarFila(body, sessionUser); }, 'RECEPCION_PINTAR_ERROR']
   };
   const route = Object.prototype.hasOwnProperty.call(routes, action) ? routes[action] : null;
   if (!route) return null;

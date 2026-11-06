@@ -122,6 +122,7 @@ function summarizeIvaDoc(doc) {
 
 // Buzón: avisos en memoria (mismo contrato que AppsScript-Avisos.gs).
 const avisos = [];
+const pinturas = []; // filas pintadas por recepcionPintarFila
 const sameName = (a, b) => String(a || '').trim().toLowerCase() === String(b || '').trim().toLowerCase();
 
 const sessions = new Map();
@@ -349,6 +350,16 @@ export async function handle(body) {
       });
       return { ok: true, marcados };
     }
+    case 'recepcionPintarFila': {
+      const row = getRows(body.year, body.sheet).find((r) => r._row === Number(body.row));
+      if (!row) return { ok: false, code: 'ROW_INVALID', error: 'Fila inválida' };
+      const dia = Number(String(row['Vencimiento'] || '').replace(/\D/g, '')) || 0;
+      if (dia % 5 === 0) return { ok: true, pintado: false, motivo: 'El Vencimiento de la columna A no tiene un color definido.' };
+      pinturas.push({ year: body.year, sheet: body.sheet, row: row._row });
+      return { ok: true, pintado: true, color: '#fde68a', origen: 'celda' };
+    }
+    case 'smokePinturas':
+      return { ok: true, pinturas };
     // Sólo para pruebas: deja un aviso para un usuario sin pasar por la ficha.
     case 'smokeSembrarAviso': {
       const id = `av-${Math.random().toString(36).slice(2)}`;

@@ -65,6 +65,10 @@ Qué revisar:
   opcional de lo que llegó, Observaciones, fecha automática y
   **Registrar recepción y avisar**. En la planilla deben quedar `✓` (o
   `✓ resumen`), la observación y la fecha del día.
+- Al registrar, la fila del cliente se pinta de B a K con el color del
+  Vencimiento (columna A). El color se toma del relleno de A; si A no tiene
+  relleno, de una regla de formato condicional sobre A; si no, de otra fila
+  con el mismo vencimiento. Si no hay color, se registra igual y se avisa.
 - Datos del cliente: plegados por defecto, todos editables, Clave MH oculta.
 - Buzón: entrar con el usuario Encargado, ver la campana con el número,
   abrir el aviso (queda leído y abre la ficha), filtros y "Marcar todo".
