@@ -17,6 +17,7 @@ import {
   buildDocumentValue,
   formatDateDMY,
   formatSheetValue,
+  parseSheetDate,
   compactHeader,
   normalizeSearchText,
   getFieldType,
@@ -33,6 +34,7 @@ import {
   textOn,
   vencAuto,
   periodoFiscalDeHoja,
+  diasRetraso,
   monthIndexFromSheet,
   fechaCorta,
   DIAS_C,
@@ -69,9 +71,6 @@ const PRIORITY_FIELD_TESTS = [
   (c) => c === 'contacto' || c.startsWith('contacto'),
   (c) => c.startsWith('telefono') || c.startsWith('tel') || c.startsWith('celular'),
 ];
-
-const DIA_MS = 86_400_000;
-const inicioDia = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
 
 function sameUser(a, b) {
   return normalizeSearchText(a) === normalizeSearchText(b);
@@ -227,9 +226,23 @@ export default function ClientDetail({
       if (dia >= 1 && dia <= 31 && mesIdx !== null && anio) fecha = new Date(anio, mesIdx, dia);
     }
     const color = digito !== null ? colorFor(ivaConfig, digito) : null;
-    const retraso = fecha ? Math.round((inicioDia(new Date()) - inicioDia(fecha)) / DIA_MS) : 0;
-    return { digito, fecha, color, retrasoDias: retraso > 0 ? retraso : 0 };
+    return { digito, fecha, color };
   }, [rucText, year, month, ivaConfig, vencimientoColumn, values]);
+
+  // Retraso de la documentación: los papeles deben llegar hasta el día del
+  // vencimiento (el 7/11 para VENC. 0; el 8/11 ya es 1 día de retraso). Si ya
+  // se registró la llegada (columna Fecha), el retraso queda fijo en esa
+  // fecha; si todavía no llegaron, se cuenta hasta hoy.
+  const llegada = fechaColumn ? parseSheetDate(values[fechaColumn]) : null;
+  const retraso = venc.fecha
+    ? llegada
+      ? { tipo: 'llego', dias: diasRetraso(venc.fecha, llegada), fecha: llegada }
+      : { tipo: 'pendiente', dias: diasRetraso(venc.fecha, new Date()) }
+    : { tipo: 'pendiente', dias: 0 };
+  const textoFecha = (d) => `${DIAS_C[d.getDay()]} ${fechaCorta(d)}`;
+  const diasTexto = (n) => `${n} ${n === 1 ? 'día' : 'días'}`;
+  // Retraso con que quedaría registrada la recepción si se registra hoy.
+  const retrasoHoy = venc.fecha ? diasRetraso(venc.fecha, new Date()) : 0;
   const vencimientoText = vencimientoColumn ? formatVencimiento(values[vencimientoColumn]) : '';
   const fechaActual = fechaColumn ? formatSheetValue(values[fechaColumn]) : '';
   const hoy = formatDateDMY(new Date());
@@ -398,13 +411,14 @@ export default function ClientDetail({
       notaColor = ` No se pudo pintar la fila: ${err.message}`;
     }
 
+    const conRetraso = retrasoHoy > 0 ? ` con ${diasTexto(retrasoHoy)} de retraso` : '';
     let result;
     if (!avisaAlEncargado) {
       result = {
         tipo: 'ok',
         texto: encargado
-          ? `Recepción registrada el ${hoy}. Sos el Encargado de este cliente: no hace falta aviso.`
-          : `Recepción registrada el ${hoy}. El cliente no tiene Encargado: no se envió aviso.`,
+          ? `Recepción registrada el ${hoy}${conRetraso}. Sos el Encargado de este cliente: no hace falta aviso.`
+          : `Recepción registrada el ${hoy}${conRetraso}. El cliente no tiene Encargado: no se envió aviso.`,
       };
     } else {
       try {
@@ -421,10 +435,10 @@ export default function ClientDetail({
           }),
           nota: observacionesDraft,
           vencimiento: venc.fecha
-            ? `${DIAS_C[venc.fecha.getDay()]} ${fechaCorta(venc.fecha)}`
+            ? `${textoFecha(venc.fecha)}${retrasoHoy > 0 ? ` · llegó con ${diasTexto(retrasoHoy)} de retraso` : ''}`
             : vencimientoText,
         });
-        result = { tipo: 'ok', texto: `Recepción registrada el ${hoy} y aviso enviado a ${encargado}.` };
+        result = { tipo: 'ok', texto: `Recepción registrada el ${hoy}${conRetraso} y aviso enviado a ${encargado}.` };
       } catch (err) {
         result = {
           tipo: 'aviso',
@@ -757,13 +771,20 @@ export default function ClientDetail({
             )}
           </div>
 
-          {venc.retrasoDias > 0 && !readOnlyPreview && (
+          {retraso.dias > 0 && (
             <div className="rx-retraso" role="status">
               <Clock size={18} aria-hidden="true" />
-              <span>
-                <strong>En retraso: {venc.retrasoDias} {venc.retrasoDias === 1 ? 'día' : 'días'}.</strong>{' '}
-                Venció el {DIAS_C[venc.fecha.getDay()]} {fechaCorta(venc.fecha)}.
-              </span>
+              {retraso.tipo === 'llego' ? (
+                <span>
+                  <strong>Llegó con {diasTexto(retraso.dias)} de retraso</strong> (el {textoFecha(retraso.fecha)};
+                  vencía el {textoFecha(venc.fecha)}).
+                </span>
+              ) : (
+                <span>
+                  <strong>Documentación pendiente: {diasTexto(retraso.dias)} de retraso.</strong> Vencía el{' '}
+                  {textoFecha(venc.fecha)}; si se registra hoy, queda con {diasTexto(retraso.dias)} de retraso.
+                </span>
+              )}
             </div>
           )}
 

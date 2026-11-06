@@ -569,3 +569,19 @@ export function formatSheetValue(value) {
   }
   return text;
 }
+
+// Fecha de una celda: texto ISO de Sheets o "dd/mm/aaaa" (como se escribe a
+// mano). Devuelve un Date local o null.
+export function parseSheetDate(value) {
+  if (value === null || value === undefined || typeof value === 'boolean') return null;
+  const text = String(value).trim();
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(text)) {
+    const date = new Date(text);
+    return Number.isNaN(date.getTime()) ? null : new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  }
+  const m = text.match(/^(\d{1,2})[/.-](\d{1,2})[/.-](\d{2}|\d{4})$/);
+  if (!m) return null;
+  const year = m[3].length === 2 ? 2000 + Number(m[3]) : Number(m[3]);
+  const date = new Date(year, Number(m[2]) - 1, Number(m[1]));
+  return date.getMonth() === Number(m[2]) - 1 ? date : null;
+}

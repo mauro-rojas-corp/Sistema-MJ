@@ -77,6 +77,16 @@ export function periodoFiscalDeHoja(year, sheetName, desfase = -1) {
   return ym(y, idx + desfase);
 }
 
+// Días de retraso respecto del vencimiento (días corridos). 0 si todavía no
+// venció o si se cumple el mismo día: el 7/11 vence, el 8/11 es 1 día.
+export function diasRetraso(vencimiento, referencia = new Date()) {
+  if (!vencimiento || !referencia) return 0;
+  const a = Date.UTC(vencimiento.getFullYear(), vencimiento.getMonth(), vencimiento.getDate());
+  const b = Date.UTC(referencia.getFullYear(), referencia.getMonth(), referencia.getDate());
+  const dias = Math.round((b - a) / 86_400_000);
+  return dias > 0 ? dias : 0;
+}
+
 /* ---------- Formato ---------- */
 export function gs(n) { n = Math.round(Number(n) || 0); return (n < 0 ? '-' : '') + Math.abs(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.'); }
 export function toNum(s) { const t = String(s ?? '').replace(/[^\d-]/g, ''); return t === '' || t === '-' ? 0 : parseInt(t, 10); }

@@ -25,6 +25,7 @@ import {
   toNum,
   vencAuto,
   vencDe,
+  diasRetraso,
   ym,
 } from './ivaCore';
 import './iva.css';
@@ -365,6 +366,7 @@ function Tablero({
   } else if (!visibleRows.length) {
     body = <div className="iva-empty">Ningún cliente coincide con el filtro.</div>;
   } else {
+    const hoy = new Date();
     body = (
       <div className="iva-list">
         <table className="iva-rows">
@@ -373,6 +375,7 @@ function Tablero({
           </thead>
           <tbody>
             {visibleRows.map((r) => {
+              // Retraso: sólo si todavía no se presentó y ya pasó el vencimiento.
               const col = r.t === null ? '#999' : colorFor(config, r.t);
               const [tagCls, tagLabel] = ESTADO_TAG[r.estado];
               return (
@@ -403,6 +406,11 @@ function Tablero({
                       <>
                         <div>{DIAS_C[r.v.fecha.getDay()]} {fechaCorta(r.v.fecha)}</div>
                         <div className="sub">{r.v.manual ? 'Fecha ajustada a mano' : 'VENC. ' + r.t + (r.v.inhabil ? ' · cae en día inhábil' : '')}</div>
+                        {r.estado !== 'pres' && diasRetraso(r.v.fecha, hoy) > 0 && (
+                          <div className="iva-retraso">
+                            {diasRetraso(r.v.fecha, hoy)} {diasRetraso(r.v.fecha, hoy) === 1 ? 'día' : 'días'} de retraso
+                          </div>
+                        )}
                       </>
                     ) : <span className="sub">{r.ruc ? 'RUC inválido' : 'Sin RUC'}</span>}
                   </td>

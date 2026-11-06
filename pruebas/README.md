@@ -66,10 +66,14 @@ Qué revisar:
   **Registrar recepción y avisar**. En la planilla deben quedar `✓` (o
   `✓ resumen`), la observación y la fecha del día.
 - Se registra aunque el cliente no tenga Encargado (sin aviso).
-- Aviso de retraso en la recepción: "En retraso: N días. Venció el …" sólo
-  si ya pasó el vencimiento; si no, no aparece nada. El vencimiento es el de
-  Vencimientos IVA (VENC. = último dígito del RUC, día 7 + 2·VENC. del mes
-  de la hoja).
+- Retraso de la documentación (ficha): los papeles deben llegar hasta el
+  día del vencimiento (VENC. 0 → 7/11; el 8/11 ya es 1 día). Si todavía no
+  llegaron, "Documentación pendiente: N días de retraso" (hasta hoy); una
+  vez registrada la llegada (columna Fecha), "Llegó con N días de retraso"
+  queda fijo en esa fecha. Si llegó a tiempo, no aparece nada. El aviso del
+  Buzón dice con cuántos días de retraso llegó.
+- Vencimientos IVA: en la lista y en la liquidación, "N días de retraso" para
+  cada cliente todavía no presentado cuyo vencimiento ya pasó.
 - Color del vencimiento: chip "VENC. n" en la ficha y, al registrar, la fila
   se pinta de B a K en la planilla con el color de ese VENC. configurado en
   Vencimientos IVA. Si la fila no tiene RUC, se usa el color de la columna A.

@@ -30,6 +30,7 @@ import {
   textOn,
   toNum,
   vencDe,
+  diasRetraso,
   waChatUrl,
   waMensaje,
   waTelefono,
@@ -439,6 +440,11 @@ export default function IvaEditor({
                   ? <>Ajustada a mano. <button type="button" className="iva-linkbtn" onClick={() => setField('vencManual', null)}>Volver a la fecha automática</button></>
                   : t === null ? 'RUC inválido: cargá la fecha a mano.' : `Automática: VENC. ${t}, día ${7 + 2 * t}${v && v.inhabil ? ' (cae en día inhábil)' : ''}`}
               </div>
+              {v && (draft.estado || 'pend') !== 'pres' && diasRetraso(v.fecha) > 0 && (
+                <div className="iva-retraso" role="status">
+                  {diasRetraso(v.fecha)} {diasRetraso(v.fecha) === 1 ? 'día' : 'días'} de retraso (todavía no se presentó)
+                </div>
+              )}
             </div>
             <div className="f">
               <label htmlFor="iva-pago">Fecha de pago prevista</label>
