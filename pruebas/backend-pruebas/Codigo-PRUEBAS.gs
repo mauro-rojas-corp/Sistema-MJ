@@ -2354,10 +2354,43 @@ function ensureAvisosSheet() {
   let sheet = ss.getSheetByName(AVISOS_SHEET_NAME);
   if (!sheet) {
     sheet = ss.insertSheet(AVISOS_SHEET_NAME);
+    // Todo como texto: si no, Sheets convierte "OCTUBRE 2026" o el RUC en
+    // fecha/número y el aviso deja de apuntar a la hoja del mes.
+    sheet.getRange(1, 1, sheet.getMaxRows(), AVISOS_HEADERS.length).setNumberFormat('@');
     sheet.getRange(1, 1, 1, AVISOS_HEADERS.length).setValues([AVISOS_HEADERS]);
     sheet.setFrozenRows(1);
   }
   return sheet;
+}
+
+const AVISOS_MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto',
+  'septiembre', 'octubre', 'noviembre', 'diciembre'];
+
+// Avisos guardados antes de forzar el texto: Sheets convirtió el nombre de
+// la hoja ("OCTUBRE 2026") en fecha. Se recupera buscando la hoja del año
+// que tenga ese mes en el nombre.
+function avisosMesDesdeFecha_(fecha, anio, cacheHojas) {
+  const mes = AVISOS_MESES[fecha.getMonth()];
+  const clave = String(anio || fecha.getFullYear());
+  if (!Object.prototype.hasOwnProperty.call(cacheHojas, clave)) {
+    try { cacheHojas[clave] = getAvailableSheets(clave); } catch (err) { cacheHojas[clave] = []; }
+  }
+  const variantes = mes === 'septiembre' ? ['septiembre', 'setiembre'] : [mes];
+  const anioFecha = String(fecha.getFullYear());
+  const candidatas = cacheHojas[clave].filter(function (nombre) {
+    const n = normalizeText(nombre);
+    return variantes.some(function (v) { return n.indexOf(v) !== -1; });
+  });
+  // Primero la que también tiene el año ("OCTUBRE 2026"), después cualquiera.
+  const hoja = candidatas.filter(function (nombre) {
+    return String(nombre).indexOf(anioFecha) !== -1;
+  })[0] || candidatas[0];
+  return hoja || (mes.charAt(0).toUpperCase() + mes.slice(1) + ' ' + fecha.getFullYear());
+}
+
+function avisosCeldaTexto_(value) {
+  if (value instanceof Date) return value.toISOString();
+  return String(value === null || value === undefined ? '' : value);
 }
 
 function avisosTexto_(value, max) {
@@ -2369,29 +2402,36 @@ function avisosMismoUsuario_(a, b) {
 }
 
 // Lee las últimas filas de la hoja como objetos (fila real incluida).
-function avisosLeerRecientes_(sheet) {
+function avisosLeerRecientes_(sheet, opciones) {
   const lastRow = sheet.getLastRow();
   if (lastRow < 2) return [];
+  const resolverMes = Boolean(opciones && opciones.resolverMes);
+  const cacheHojas = {};
   const desde = Math.max(2, lastRow - AVISOS_MAX_FILAS_LEIDAS + 1);
   const values = sheet.getRange(desde, 1, lastRow - desde + 1, AVISOS_HEADERS.length).getValues();
   return values.map(function (r, i) {
     let documentos = [];
     try { documentos = JSON.parse(r[9] || '[]'); } catch (err) { documentos = []; }
+    const anio = r[4] instanceof Date ? String(r[4].getFullYear()) : avisosCeldaTexto_(r[4]).trim();
+    let mes = avisosCeldaTexto_(r[5]);
+    if (r[5] instanceof Date) {
+      mes = resolverMes ? avisosMesDesdeFecha_(r[5], anio, cacheHojas) : '';
+    }
     return {
       fila: desde + i,
       id: String(r[0] || ''),
-      creado: r[1] instanceof Date ? r[1].toISOString() : String(r[1] || ''),
+      creado: avisosCeldaTexto_(r[1]),
       para: String(r[2] || ''),
       de: String(r[3] || ''),
-      anio: String(r[4] || ''),
-      mes: String(r[5] || ''),
+      anio: anio,
+      mes: mes,
       filaCliente: Number(r[6]) || 0,
       cliente: String(r[7] || ''),
-      ruc: String(r[8] || ''),
+      ruc: avisosCeldaTexto_(r[8]),
       documentos: Array.isArray(documentos) ? documentos : [],
       nota: String(r[10] || ''),
-      vencimiento: String(r[11] || ''),
-      leido: r[12] instanceof Date ? r[12].toISOString() : String(r[12] || '')
+      vencimiento: r[11] instanceof Date ? Utilities.formatDate(r[11], Session.getScriptTimeZone(), 'dd/MM/yyyy') : String(r[11] || ''),
+      leido: avisosCeldaTexto_(r[12])
     };
   });
 }
@@ -2438,7 +2478,7 @@ function handleAvisosCrear(body, sessionUser) {
     .slice(0, 12);
 
   const id = Utilities.getUuid();
-  ensureAvisosSheet().appendRow([
+  const filaAviso = [
     id,
     new Date().toISOString(),
     destinatario.nombre,
@@ -2452,14 +2492,29 @@ function handleAvisosCrear(body, sessionUser) {
     avisosTexto_(body.nota, 1000),
     avisosTexto_(body.vencimiento, 60),
     ''
-  ]);
+  ].map(function (v) { return String(v); });
+
+  // Se escribe como texto (no appendRow): así Sheets no convierte el mes ni
+  // el RUC. El lock evita que dos avisos simultáneos pisen la misma fila.
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(15000)) {
+    return errorResponse('El buzón está ocupado, intentá de nuevo', 'AVISOS_LOCK_TIMEOUT');
+  }
+  try {
+    const sheet = ensureAvisosSheet();
+    const destino = sheet.getRange(sheet.getLastRow() + 1, 1, 1, AVISOS_HEADERS.length);
+    destino.setNumberFormat('@');
+    destino.setValues([filaAviso]);
+  } finally {
+    lock.releaseLock();
+  }
 
   return jsonResponse({ ok: true, id: id, para: destinatario.nombre });
 }
 
 function handleAvisosListar(sessionUser) {
   const limite = Date.now() - AVISOS_DIAS_VISIBLES * 24 * 60 * 60 * 1000;
-  const mios = avisosLeerRecientes_(ensureAvisosSheet()).filter(function (a) {
+  const mios = avisosLeerRecientes_(ensureAvisosSheet(), { resolverMes: true }).filter(function (a) {
     if (!a.id || !avisosMismoUsuario_(a.para, sessionUser)) return false;
     const t = Date.parse(a.creado);
     return !isNaN(t) && t >= limite;
