@@ -16,7 +16,8 @@ original.
    el cambio en la tabla de abajo como *En prueba*.
 3. **Prueba:** Vercel publica solo la app de pruebas. Si el cambio toca la
    extensión, se regenera `pruebas/Extension-pruebas` y se recarga en Chrome.
-   Si toca Apps Script, se copia el `.gs` al proyecto **de pruebas**.
+   Si toca Apps Script, se regenera `pruebas/backend-pruebas/Codigo-PRUEBAS.gs`
+   y se pega en el proyecto **de pruebas** (ver abajo).
 4. **Aprobación:** si anda, el cambio pasa a *Aprobado*; si no, se corrige
    en un commit nuevo con el mismo `[CAMBIO-n]`.
 5. **Pase al original:** se llevan los archivos de los commits `[CAMBIO-n]`
@@ -41,31 +42,42 @@ original.
 | ----- | ---- | ------- |
 | Código | `MJEstudioContable/Control-Total-Clientes-IVA` | este repositorio |
 | App | `https://control-total-clientes.vercel.app` | `https://control-total-clientes-pruebas.vercel.app` |
-| Backend | Apps Script y planillas reales | proyecto de Apps Script y **copias** de las planillas |
+| Backend | Apps Script y planillas reales | proyecto `Control Total PRUEBAS` y planillas `PRUEBAS - …` con datos ficticios |
 | Extensión | Ekuatia Login · `dffknnjnidhfldehfalchalikfkjbehm` | Ekuatia Login PRUEBAS · `hljageieeeljncgmbbpmkflpdminodom` |
 
 ## Armado (una sola vez)
 
-### 1. Backend de pruebas (Google Drive + Apps Script)
+### 1. Backend de pruebas (Apps Script, con datos ficticios)
 
-1. En Drive, **Archivo → Hacer una copia** de la planilla de administración
-   (la que tiene las pestañas `Planillas`, `Usuarios`, etc.) y de cada
-   planilla anual de clientes. Nombralas `PRUEBAS - …`.
-2. En la copia de administración, pestaña **`Planillas`**: reemplazá los IDs
-   de cada año por los de las **copias** (el ID es la parte de la URL entre
-   `/d/` y `/edit`). Si una fila queda apuntando a una planilla real, las
-   pruebas escriben en datos reales.
-3. En <https://script.google.com>, **Nuevo proyecto**: `Control Total PRUEBAS`.
-   Creá tres archivos y pegá `AppsScript-Code-auth-PROPUESTA.gs`,
-   `AppsScript-Iva.gs` y `AppsScript-Marcaciones.gs` de este repositorio.
-   En el primero, `ADMIN_SPREADSHEET_ID` = ID de la copia de administración.
-4. **Configuración del proyecto → Propiedades del script**:
-   - `API_TOKEN`: uno **nuevo** (distinto al real).
-   - `PIN_PEPPER`: el mismo que el real si querés entrar con los mismos PIN;
-     uno nuevo si preferís PIN distintos (hay que volver a darlos de alta).
-   - `IVA_SPREADSHEET_ID`: sólo si el real la tiene; con el ID de su copia.
-5. **Implementar → Nueva implementación → Aplicación web**, ejecutar como
-   *yo*, acceso *cualquier usuario*. Copiá la URL (`…/exec`).
+No hace falta acceso a las planillas ni al Apps Script reales: el instalador
+crea todo nuevo en tu Google Drive, con clientes inventados.
+
+1. Entrá a <https://script.google.com> con tu cuenta de Google y tocá
+   **Nuevo proyecto**. Arriba a la izquierda, renombralo a
+   `Control Total PRUEBAS`.
+2. En GitHub abrí `pruebas/backend-pruebas/Codigo-PRUEBAS.gs` y tocá el
+   botón **Copy raw file** (ícono de copiar, arriba a la derecha del archivo).
+3. En Apps Script, en `Código.gs`, borrá lo que haya, pegá y guardá
+   (Ctrl+S).
+4. En la barra de arriba elegí la función **`instalarEntornoPruebas`** y tocá
+   **Ejecutar**. Google pide permisos la primera vez: **Revisar permisos** →
+   tu cuenta → *Configuración avanzada* → *Ir a Control Total PRUEBAS* →
+   **Permitir** (es tu propio script).
+5. En el **Registro de ejecución** aparecen las dos planillas creadas, el
+   `VITE_API_TOKEN` y los usuarios. Copiá el token (se vuelve a ver con
+   `mostrarDatosEntornoPruebas`).
+6. **Implementar → Nueva implementación** → engranaje → **Aplicación web**:
+   *Ejecutar como*: **Yo**; *Quién tiene acceso*: **Cualquier usuario**.
+   **Implementar** y copiá la **URL de la aplicación web** (termina en `/exec`).
+
+Usuarios de prueba (PIN `1234` para todos): `Super Pruebas` (SUPERUSUARIO),
+`Admin Pruebas` (ADMINISTRADOR) y `Usuario Pruebas` (USUARIO).
+
+**Cuando cambia el backend** (`AppsScript-*.gs`): Claude regenera
+`Codigo-PRUEBAS.gs`; se vuelve a pegar todo en `Código.gs`, se guarda y
+**Implementar → Administrar implementaciones → editar (lápiz) → Versión:
+Nueva versión → Implementar**. La URL no cambia. No volver a ejecutar el
+instalador.
 
 ### 2. App de pruebas (Vercel)
 
@@ -100,10 +112,11 @@ node pruebas/generar-extension.mjs https://control-total-clientes-pruebas.vercel
 
 ## Ojo: lo que las pruebas NO aíslan
 
-- **Marangatu es el portal real de la SET.** Las copias de las planillas
-  tienen las Clave MH reales: un login o un Formulario 120 desde la app de
-  pruebas actúa sobre la cuenta real del cliente. No presentar nada en
-  pruebas.
+- **Marangatu es el portal real de la SET.** Los clientes de pruebas tienen
+  RUC y Clave MH ficticios, así que el login automático falla (es lo
+  esperado). Para probar Marangatu de punta a punta hace falta cargar a mano
+  en la planilla de pruebas un cliente real: en ese caso se actúa sobre su
+  cuenta real, y no se presenta nada.
 - **WhatsApp Web es real**: probar el envío con el número propio.
-- Las copias de las planillas contienen datos reales de clientes: compartirlas
-  sólo con quien hace las pruebas.
+- Las planillas de pruebas quedan en tu Drive: si cargás datos reales en
+  ellas, compartirlas sólo con quien hace las pruebas.
