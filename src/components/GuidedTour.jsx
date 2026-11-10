@@ -24,6 +24,22 @@ function buscarVisible(selector) {
   );
 }
 
+// Desplaza la página para que el elemento y la tarjeta entren juntos: si ya
+// está a la vista con lugar arriba o abajo para la tarjeta, no se mueve.
+function acomodar(el, alturaTarjeta) {
+  const r = el.getBoundingClientRect();
+  const vh = window.innerHeight;
+  const necesita = alturaTarjeta + 40;
+  const visible = r.top >= 0 && r.bottom <= vh;
+  if (visible && (vh - r.bottom >= necesita || r.top >= necesita)) return;
+  if (r.height + necesita + 96 <= vh) {
+    // Elemento arriba (bajo la barra) y la tarjeta debajo.
+    window.scrollBy({ top: r.top - 96, behavior: 'auto' });
+  } else {
+    el.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'auto' });
+  }
+}
+
 export default function GuidedTour({ steps, onNavigate, onClose }) {
   const [index, setIndex] = useState(0);
   // Rectángulo del elemento iluminado, guardado junto al paso al que
@@ -40,8 +56,9 @@ export default function GuidedTour({ steps, onNavigate, onClose }) {
   // Navegar a la sección del paso y esperar a que aparezca su elemento.
   useEffect(() => {
     if (!step) return undefined;
-    if (step.tab) onNavigate(step.tab);
     let cancelado = false;
+    // Cambiar de sección fuera del efecto, en una tarea aparte.
+    const nav = step.tab ? setTimeout(() => !cancelado && onNavigate(step.tab), 0) : null;
     const inicio = Date.now();
     elementRef.current = null;
     const intentar = () => {
@@ -49,7 +66,7 @@ export default function GuidedTour({ steps, onNavigate, onClose }) {
       const el = buscarVisible(step.target);
       if (el || !step.target || Date.now() - inicio > ESPERA_MAX_MS) {
         elementRef.current = el;
-        if (el) el.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'smooth' });
+        if (el) acomodar(el, cardRef.current?.offsetHeight || 420);
         setSpot({ index, rect: el ? el.getBoundingClientRect() : null });
         return;
       }
@@ -59,6 +76,7 @@ export default function GuidedTour({ steps, onNavigate, onClose }) {
     return () => {
       cancelado = true;
       clearTimeout(t);
+      if (nav) clearTimeout(nav);
     };
   }, [step, index, onNavigate]);
 
@@ -99,10 +117,22 @@ export default function GuidedTour({ steps, onNavigate, onClose }) {
       );
       return;
     }
+    const centroY = Math.min(Math.max(12, rect.top + rect.height / 2 - ch / 2), vh - ch - 12);
     let top = rect.bottom + MARGEN + 12;
-    if (top + ch > vh - 12) top = rect.top - MARGEN - 12 - ch;
-    if (top < 12) top = Math.max(12, (vh - ch) / 2);
     let left = rect.left + rect.width / 2 - cw / 2;
+    if (top + ch > vh - 12) top = rect.top - MARGEN - 12 - ch;
+    if (top < 12) {
+      // Elemento alto: la tarjeta va al costado si entra; si no, centrada.
+      if (rect.right + MARGEN + 16 + cw <= vw - 12) {
+        left = rect.right + MARGEN + 16;
+        top = centroY;
+      } else if (rect.left - MARGEN - 16 - cw >= 12) {
+        left = rect.left - MARGEN - 16 - cw;
+        top = centroY;
+      } else {
+        top = Math.max(12, (vh - ch) / 2);
+      }
+    }
     left = Math.min(Math.max(12, left), vw - cw - 12);
     setCardStyle({ left, top, width: cw });
   }, [rect, index]);

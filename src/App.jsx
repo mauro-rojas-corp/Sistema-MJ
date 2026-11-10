@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useRef, useState, useEffect } from 'react';
+import { lazy, Suspense, useCallback, useMemo, useRef, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Capacitor, SystemBars, SystemBarsStyle } from '@capacitor/core';
 import { App as CapacitorApp } from '@capacitor/app';
@@ -24,6 +24,8 @@ import useMediaQuery from './hooks/useMediaQuery';
 import useAvisos from './hooks/useAvisos';
 import BuzonPanel from './components/BuzonPanel';
 import PendingClientOpener from './components/PendingClientOpener';
+import GuidedTour from './components/GuidedTour';
+import { construirPasosGuia } from './guia/pasosGuia';
 const SettingsDialog = lazy(() => import('./components/SettingsDialog'));
 import { ClientsProvider, useClientsActions } from './context/ClientsContext';
 import { STORAGE_KEY_USER } from './config';
@@ -35,7 +37,7 @@ import {
 import { formatPeriodLabel } from './utils';
 import { api, onPrivateDataCleared } from './api';
 import { olvidarPlanilla } from './marcaciones/marcacionesStore';
-import { Calendar, User, Menu, X, UserCog, RefreshCw, Settings, Bell } from 'lucide-react';
+import { Calendar, User, Menu, X, UserCog, RefreshCw, Settings, Bell, HelpCircle } from 'lucide-react';
 import './styles.css';
 import './ui-executive/recepcion-buzon.css';
 
@@ -119,6 +121,8 @@ export default function App({
   const [buzonOpen, setBuzonOpen] = useState(false);
   const [avisoTarget, setAvisoTarget] = useState(null);
   const [appNotice, setAppNotice] = useState('');
+  // Guía interactiva del sistema (botón «?» y, la primera vez, automática).
+  const [guiaOpen, setGuiaOpen] = useState(false);
   const [initialScreenReady, setInitialScreenReady] = useState(false);
   const markInitialScreenReady = useCallback(() => setInitialScreenReady(true), []);
 
@@ -597,6 +601,55 @@ export default function App({
     setAssignClientsOpen(tab === 'assign');
   }, [mobileTab, canAssignClients]);
 
+  // ── Guía interactiva ────────────────────────────────────────────────
+  // Sólo en la interfaz ejecutiva (la que tiene secciones) y con un período
+  // abierto, porque la guía recorre las secciones de ese período.
+  const guiaDisponible =
+    uiMode === 'executive' && authenticated && !mustChangePin && !readOnlyPreview && Boolean(year && month);
+  const guiaKey = `ctc:guia-vista:v1:${user || ''}`;
+  const pasosGuia = useMemo(
+    () => construirPasosGuia({ canAssign: canAssignClients, isSuper: userRole === 'SUPERUSUARIO' }),
+    [canAssignClients, userRole]
+  );
+  // La guía navega con una referencia estable para no reiniciar el paso.
+  const tabChangeRef = useRef(handleMobileTabChange);
+  useEffect(() => {
+    tabChangeRef.current = handleMobileTabChange;
+  }, [handleMobileTabChange]);
+  const handleGuiaNavigate = useCallback((tab) => {
+    setBuzonOpen(false);
+    setSettingsOpen(false);
+    setMobileMenuOpen(false);
+    tabChangeRef.current(tab);
+  }, []);
+  const abrirGuia = useCallback(() => {
+    setBuzonOpen(false);
+    setMobileMenuOpen(false);
+    setGuiaOpen(true);
+  }, []);
+  const cerrarGuia = useCallback(() => {
+    setGuiaOpen(false);
+    try {
+      localStorage.setItem(guiaKey, new Date().toISOString());
+    } catch {
+      /* sin almacenamiento: la guía puede volver a aparecer */
+    }
+    tabChangeRef.current('clients');
+  }, [guiaKey]);
+  // La primera vez que cada usuario entra a un período, la guía arranca sola.
+  useEffect(() => {
+    if (!guiaDisponible || guiaOpen) return undefined;
+    let vista = true;
+    try {
+      vista = Boolean(localStorage.getItem(guiaKey));
+    } catch {
+      vista = true;
+    }
+    if (vista) return undefined;
+    const timer = setTimeout(() => setGuiaOpen(true), 900);
+    return () => clearTimeout(timer);
+  }, [guiaDisponible, guiaKey, guiaOpen]);
+
   useEffect(() => {
     if (!year || !month || selectedClient || creatingWithHeaders) return undefined;
     const frame = window.requestAnimationFrame(() => {
@@ -777,6 +830,17 @@ export default function App({
               </button>
             )}
             {!readOnlyPreview && renderBellButton('rx-bell-button')}
+            {guiaDisponible && (
+              <button
+                type="button"
+                className="rx-help-button"
+                onClick={abrirGuia}
+                title="Guía del sistema"
+                aria-label="Ver la guía del sistema"
+              >
+                <HelpCircle size={16} />
+              </button>
+            )}
             <button
               type="button"
               className="real-exec-theme-button real-exec-settings-button"
@@ -1021,6 +1085,9 @@ export default function App({
         <div className="pin-change-notice" role="status">
           {appNotice}
         </div>
+      )}
+      {guiaDisponible && guiaOpen && (
+        <GuidedTour steps={pasosGuia} onNavigate={handleGuiaNavigate} onClose={cerrarGuia} />
       )}
       <AnimatePresence>
         {authenticated && buzonOpen && (

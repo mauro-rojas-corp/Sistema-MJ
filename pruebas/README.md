@@ -36,6 +36,7 @@ original.
 | ------ | ----------- | ------ | ------------------ |
 | —      | Copia inicial del original (`5f250f6`, 05/11/2026) | — | — |
 | CAMBIO-1 | Ficha del cliente rediseñada (documentación recibida + aviso al Encargado) y Buzón con campana | En prueba | No |
+| CAMBIO-2 | Guía interactiva del sistema (botón «?» y automática la primera vez) | En prueba | No |
 
 ### CAMBIO-1 · Ficha del cliente y Buzón
 
@@ -81,6 +82,24 @@ Qué revisar:
 - Buzón: entrar con el usuario Encargado, ver la campana con el número,
   abrir el aviso (queda leído y abre la ficha), filtros y "Marcar todo".
 
+
+### CAMBIO-2 · Guía interactiva
+
+Archivos: `src/components/GuidedTour.jsx` (nuevo), `src/guia/pasosGuia.jsx`
+(nuevo: el texto de cada paso), `src/App.jsx` (botón «?» y apertura) y
+`src/ui-executive/recepcion-buzon.css` (estilos `rx-tour-*`). No toca Apps
+Script ni la extensión.
+
+Qué revisar:
+- La primera vez que cada usuario entra a un período, la guía arranca sola
+  (se recuerda por usuario en ese dispositivo).
+- Recorre Estadísticas, Clientes, la ficha, Vencimientos IVA y la barra de
+  arriba; ADMINISTRADOR y SUPERUSUARIO ven además Asignar y Marcaciones
+  (USUARIO: 18 pasos; administradores: 20).
+- Oscurece la pantalla e ilumina el elemento del que habla; cambia sola de
+  sección. En el celular apunta a la barra de abajo.
+- Botones Anterior / Siguiente / Saltar guía, teclas ← → Enter y Esc.
+- Al terminar vuelve a Clientes; el botón **?** de la barra la repite.
 
 ## Las tres piezas separadas
 
