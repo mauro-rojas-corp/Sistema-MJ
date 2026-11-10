@@ -351,6 +351,32 @@ export function construirPasosGuia({ canAssign, isSuper }) {
       ),
     },
     {
+      id: 'sugerencias',
+      emoji: '💡',
+      title: 'Sugerencias para mejorar',
+      tab: 'clients',
+      target: '.rx-ideas-button',
+      body: (
+        <>
+          <p>
+            ¿Se te ocurrió una mejora, encontraste un <strong>fallo</strong> o tenés un consejo? Tocá la
+            lamparita, elegí el tipo, escribilo y enviá.
+          </p>
+          {canAssign ? (
+            <p>
+              Como administrador, en <strong>Recibidas</strong> ves todas las sugerencias con el nombre de
+              quien la escribió y las marcás como <strong>resueltas</strong>. El número rojo indica las nuevas.
+            </p>
+          ) : (
+            <p>
+              La recibe el administrador con tu nombre. En <strong>Mis sugerencias</strong> ves si ya la vio o
+              si quedó resuelta.
+            </p>
+          )}
+        </>
+      ),
+    },
+    {
       id: 'configuracion',
       emoji: '🛠️',
       title: 'Configuración',

@@ -369,6 +369,11 @@ function handleRecepcionPintarFila(body, sessionUser) {
 }
 
 function handleAvisosAction(action, body, sessionUser, sessionRole) {
+  // Las sugerencias (AppsScript-Sugerencias.gs) entran por acá para no tener
+  // que tocar doPost otra vez.
+  if (String(action).indexOf('sugerencias') === 0 && typeof handleSugerenciasAction === 'function') {
+    return handleSugerenciasAction(action, body, sessionUser, sessionRole);
+  }
   const routes = {
     avisosCrear: [function () { return handleAvisosCrear(body, sessionUser); }, 'AVISOS_CREAR_ERROR'],
     avisosListar: [function () { return handleAvisosListar(sessionUser); }, 'AVISOS_LISTAR_ERROR'],

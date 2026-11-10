@@ -122,6 +122,8 @@ function summarizeIvaDoc(doc) {
 
 // Buzón: avisos en memoria (mismo contrato que AppsScript-Avisos.gs).
 const avisos = [];
+// Sugerencias en memoria (mismo contrato que AppsScript-Sugerencias.gs).
+const sugerencias = [];
 const pinturas = []; // filas pintadas por recepcionPintarFila
 const MOCK_COLORES_IVA = { 0: '#ffff99', 1: '#cc99ff', 2: '#4285f4', 3: '#ffcc99', 4: '#ccecff', 5: '#ffff99', 6: '#b6d7a8', 7: '#ffccff', 8: '#cde9de', 9: '#8e7cc3' };
 const sameName = (a, b) => String(a || '').trim().toLowerCase() === String(b || '').trim().toLowerCase();
@@ -360,6 +362,43 @@ export async function handle(body) {
       const colores = { ...MOCK_COLORES_IVA, ...((iva.config && iva.config.colores) || {}) };
       pinturas.push({ year: body.year, sheet: body.sheet, row: row._row, color: colores[digito] });
       return { ok: true, pintado: true, color: colores[digito], origen: `vencimientos IVA (VENC. ${digito})`, digito };
+    }
+    case 'sugerenciasCrear': {
+      const tipo = String(body.tipo || '').toLowerCase();
+      if (!['recomendacion', 'fallo', 'consejo', 'otro'].includes(tipo)) {
+        return { ok: false, code: 'SUGERENCIA_TIPO', error: 'Elegí el tipo de sugerencia' };
+      }
+      const texto = String(body.texto || '').trim();
+      if (texto.length < 3) return { ok: false, code: 'SUGERENCIA_VACIA', error: 'Escribí tu sugerencia' };
+      if (texto.length > 1500) return { ok: false, code: 'SUGERENCIA_LARGA', error: 'La sugerencia es muy larga (máximo 1500 caracteres)' };
+      const id = `sg-${Math.random().toString(36).slice(2)}`;
+      sugerencias.push({
+        id, creada: new Date().toISOString(), usuario: session.user, rol: session.role, tipo,
+        seccion: String(body.seccion || '').slice(0, 60), texto, estado: 'nueva', revisadaPor: '', revisadaEl: '',
+      });
+      return { ok: true, id };
+    }
+    case 'sugerenciasListar': {
+      const admin = session.role === 'ADMINISTRADOR' || session.role === 'SUPERUSUARIO';
+      const lista = sugerencias.filter((x) => admin || sameName(x.usuario, session.user)).slice().reverse();
+      return { ok: true, admin, sugerencias: lista, nuevas: admin ? lista.filter((x) => x.estado === 'nueva').length : 0 };
+    }
+    case 'sugerenciasEstado': {
+      if (!(session.role === 'ADMINISTRADOR' || session.role === 'SUPERUSUARIO')) {
+        return { ok: false, code: 'FORBIDDEN', error: 'Sólo un administrador puede cambiar el estado' };
+      }
+      if (!['nueva', 'vista', 'resuelta'].includes(body.estado)) return { ok: false, code: 'SUGERENCIA_ESTADO', error: 'Estado no válido' };
+      const ids = new Set(Array.isArray(body.ids) ? body.ids : []);
+      let cambiadas = 0;
+      sugerencias.forEach((x) => {
+        if (!ids.has(x.id) || x.estado === body.estado) return;
+        if (body.estado === 'vista' && x.estado === 'resuelta') return;
+        x.estado = body.estado;
+        x.revisadaPor = body.estado === 'nueva' ? '' : session.user;
+        x.revisadaEl = body.estado === 'nueva' ? '' : new Date().toISOString();
+        cambiadas++;
+      });
+      return { ok: true, cambiadas };
     }
     case 'smokePinturas':
       return { ok: true, pinturas };

@@ -23,6 +23,8 @@ import DesktopSidebar from './components/DesktopSidebar';
 import useMediaQuery from './hooks/useMediaQuery';
 import useAvisos from './hooks/useAvisos';
 import BuzonPanel from './components/BuzonPanel';
+import SugerenciasPanel from './components/SugerenciasPanel';
+import useSugerencias from './hooks/useSugerencias';
 import PendingClientOpener from './components/PendingClientOpener';
 import GuidedTour from './components/GuidedTour';
 import { construirPasosGuia } from './guia/pasosGuia';
@@ -37,7 +39,7 @@ import {
 import { formatPeriodLabel } from './utils';
 import { api, onPrivateDataCleared } from './api';
 import { olvidarPlanilla } from './marcaciones/marcacionesStore';
-import { Calendar, User, Menu, X, UserCog, RefreshCw, Settings, Bell, HelpCircle } from 'lucide-react';
+import { Calendar, User, Menu, X, UserCog, RefreshCw, Settings, Bell, HelpCircle, Lightbulb } from 'lucide-react';
 import './styles.css';
 import './ui-executive/recepcion-buzon.css';
 
@@ -123,6 +125,9 @@ export default function App({
   const [appNotice, setAppNotice] = useState('');
   // Guía interactiva del sistema (botón «?» y, la primera vez, automática).
   const [guiaOpen, setGuiaOpen] = useState(false);
+  // Sugerencias para mejorar el sistema (ventana bajo el ícono de la barra).
+  const [sugOpen, setSugOpen] = useState(false);
+  const sugButtonRef = useRef(null);
   const [initialScreenReady, setInitialScreenReady] = useState(false);
   const markInitialScreenReady = useCallback(() => setInitialScreenReady(true), []);
 
@@ -149,6 +154,12 @@ export default function App({
   const authReady = !user || authState.status !== 'checking';
   const buzon = useAvisos(authenticated && !readOnlyPreview, `${user || ''}|${activeSessionToken}`);
   const initialContentReady = initialScreenReady && authReady;
+  const isAdminUser = userRole === 'SUPERUSUARIO' || userRole === 'ADMINISTRADOR';
+  const sugerencias = useSugerencias(
+    authenticated && !readOnlyPreview,
+    `${user || ''}|${activeSessionToken}`,
+    isAdminUser
+  );
 
   // Suscripción al estado de la cola de guardado en memoria y protección
   // antes de cerrar o esconder la pestaña cuando todavía hay cambios sin
@@ -549,6 +560,7 @@ export default function App({
       className={`${className} ${buzon.noLeidos > 0 ? 'has-unread' : ''}`}
       onClick={() => {
         setMobileMenuOpen(false);
+        setSugOpen(false);
         setBuzonOpen(true);
         buzon.refresh();
       }}
@@ -563,6 +575,47 @@ export default function App({
       )}
     </button>
   );
+
+  const SECCIONES_SUG = {
+    stats: 'Estadísticas',
+    clients: 'Clientes',
+    iva: 'Vencimientos IVA',
+    assign: 'Asignar clientes',
+    marcaciones: 'Marcaciones',
+  };
+  const seccionActual = !year || !month
+    ? 'Elección de período'
+    : selectedClient
+      ? 'Ficha del cliente'
+      : creatingWithHeaders
+        ? 'Nuevo cliente'
+        : SECCIONES_SUG[assignClientsOpen ? 'assign' : mobileTab] || '';
+  const cerrarSugerencias = useCallback(() => setSugOpen(false), []);
+  const renderSugerenciasButton = () => {
+    const nuevas = isAdminUser ? sugerencias.nuevas : 0;
+    return (
+      <button
+        ref={sugButtonRef}
+        type="button"
+        className={`rx-bell-button rx-ideas-button ${nuevas > 0 ? 'has-unread' : ''}`}
+        onClick={() => {
+          setMobileMenuOpen(false);
+          setBuzonOpen(false);
+          setSugOpen((v) => !v);
+        }}
+        title="Sugerencias para mejorar el sistema"
+        aria-label={nuevas > 0 ? `Sugerencias, ${nuevas} nuevas` : 'Sugerencias para mejorar el sistema'}
+        aria-expanded={sugOpen}
+      >
+        <Lightbulb size={16} />
+        {nuevas > 0 && (
+          <span className="rx-bell-badge" aria-hidden="true">
+            {nuevas > 99 ? '99+' : nuevas}
+          </span>
+        )}
+      </button>
+    );
+  };
 
   // La confirmación de PIN actualizado desaparece sola para no acumular
   // avisos en pantalla.
@@ -618,12 +671,14 @@ export default function App({
   }, [handleMobileTabChange]);
   const handleGuiaNavigate = useCallback((tab) => {
     setBuzonOpen(false);
+    setSugOpen(false);
     setSettingsOpen(false);
     setMobileMenuOpen(false);
     tabChangeRef.current(tab);
   }, []);
   const abrirGuia = useCallback(() => {
     setBuzonOpen(false);
+    setSugOpen(false);
     setMobileMenuOpen(false);
     setGuiaOpen(true);
   }, []);
@@ -830,6 +885,7 @@ export default function App({
               </button>
             )}
             {!readOnlyPreview && renderBellButton('rx-bell-button')}
+            {!readOnlyPreview && renderSugerenciasButton()}
             {guiaDisponible && (
               <button
                 type="button"
@@ -956,6 +1012,7 @@ export default function App({
             )}
 
             {user && !readOnlyPreview && renderBellButton('rx-bell-button')}
+            {user && !readOnlyPreview && authenticated && renderSugerenciasButton()}
 
             {/* Píldora de usuario: visible siempre, en desktop y mobile,
                 pegada a la derecha del todo. */}
@@ -1089,6 +1146,18 @@ export default function App({
       {guiaDisponible && guiaOpen && (
         <GuidedTour steps={pasosGuia} onNavigate={handleGuiaNavigate} onClose={cerrarGuia} />
       )}
+      <AnimatePresence>
+        {authenticated && !readOnlyPreview && sugOpen && (
+          <SugerenciasPanel
+            key="sugerencias"
+            anchorRef={sugButtonRef}
+            admin={isAdminUser}
+            data={sugerencias}
+            seccion={seccionActual}
+            onClose={cerrarSugerencias}
+          />
+        )}
+      </AnimatePresence>
       <AnimatePresence>
         {authenticated && buzonOpen && (
           <BuzonPanel

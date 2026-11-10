@@ -37,6 +37,7 @@ original.
 | —      | Copia inicial del original (`5f250f6`, 05/11/2026) | — | — |
 | CAMBIO-1 | Ficha del cliente rediseñada (documentación recibida + aviso al Encargado) y Buzón con campana | En prueba | No |
 | CAMBIO-2 | Guía interactiva del sistema (botón «?» y automática la primera vez) | En prueba | No |
+| CAMBIO-3 | Sugerencias de los usuarios (lamparita junto al Buzón); el administrador las ve con el nombre | En prueba | No |
 
 ### CAMBIO-1 · Ficha del cliente y Buzón
 
@@ -95,11 +96,38 @@ Qué revisar:
   (se recuerda por usuario en ese dispositivo).
 - Recorre Estadísticas, Clientes, la ficha, Vencimientos IVA y la barra de
   arriba; ADMINISTRADOR y SUPERUSUARIO ven además Asignar y Marcaciones
-  (USUARIO: 18 pasos; administradores: 20).
+  (USUARIO: 19 pasos; administradores: 21).
 - Oscurece la pantalla e ilumina el elemento del que habla; cambia sola de
   sección. En el celular apunta a la barra de abajo.
 - Botones Anterior / Siguiente / Saltar guía, teclas ← → Enter y Esc.
 - Al terminar vuelve a Clientes; el botón **?** de la barra la repite.
+
+### CAMBIO-3 · Sugerencias
+
+Archivos: `AppsScript-Sugerencias.gs` (nuevo), `AppsScript-Avisos.gs` (deriva
+las acciones `sugerencias*`, así no se toca `Code.gs`),
+`src/components/SugerenciasPanel.jsx` y `src/hooks/useSugerencias.js`
+(nuevos), `src/App.jsx`, `src/api.js`, `src/guia/pasosGuia.jsx` (paso nuevo),
+`src/ui-executive/recepcion-buzon.css` y `tools/smoke/server.mjs`.
+
+Para probarlo con tu Apps Script:
+1. **+ → Secuencia de comandos** llamada `Sugerencias` y pegá
+   `AppsScript-Sugerencias.gs`.
+2. En el archivo `Avisos`, reemplazá todo por el `AppsScript-Avisos.gs` nuevo.
+3. **Implementar → Administrar implementaciones → editar → Nueva versión**.
+   La hoja `Sugerencias` se crea sola en la planilla de administración.
+
+Qué revisar:
+- Lamparita al lado de la campana; abre una ventanita debajo.
+- Usuario: elige Recomendación / Fallo / Consejo / Otro, escribe (hasta 1500
+  caracteres) y envía. En **Mis sugerencias** ve si quedó Enviada, Vista por
+  el administrador o Resuelta. Sólo ve las suyas.
+- ADMINISTRADOR y SUPERUSUARIO: número rojo con las nuevas; en **Recibidas**
+  ven todas con el nombre de quien la escribió, la fecha y la sección donde
+  estaba; filtros Pendientes / Resueltas / Todas y por tipo; **Marcar
+  resuelta** y **Reabrir**. Al abrir Recibidas, las nuevas pasan a vistas.
+- En la planilla, hoja `Sugerencias`: una fila por sugerencia con usuario,
+  rol, tipo, sección, texto, estado y quién la revisó.
 
 ## Las tres piezas separadas
 

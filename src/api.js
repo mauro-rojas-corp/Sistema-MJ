@@ -592,6 +592,21 @@ export const api = {
     return response;
   },
 
+  // Sugerencias para mejorar el sistema (AppsScript-Sugerencias.gs). Cada
+  // usuario ve las suyas; ADMINISTRADOR y SUPERUSUARIO ven todas.
+  sugerencias: {
+    listar: async () => {
+      const data = await request({ action: 'sugerenciasListar' });
+      return {
+        admin: data.admin === true,
+        sugerencias: Array.isArray(data.sugerencias) ? data.sugerencias : [],
+        nuevas: Number(data.nuevas) || 0,
+      };
+    },
+    crear: ({ tipo, texto, seccion }) => request({ action: 'sugerenciasCrear', tipo, texto, seccion }),
+    cambiarEstado: (ids, estado) => request({ action: 'sugerenciasEstado', ids, estado }),
+  },
+
   // Buzón: avisos de documentación recibida para el Encargado de cada
   // cliente (AppsScript-Avisos.gs). Cada usuario ve y marca sólo los suyos.
   avisos: {
