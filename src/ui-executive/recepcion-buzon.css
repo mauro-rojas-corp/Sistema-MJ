@@ -773,3 +773,214 @@
   white-space: nowrap;
   border: 0;
 }
+
+/* ── Guía interactiva del sistema ─────────────────────────────────── */
+.rx-tour {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.rx-tour-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 14, 18, 0.62);
+}
+
+.rx-tour-spot {
+  position: fixed;
+  border-radius: 14px;
+  box-shadow: 0 0 0 4px rgba(111, 165, 195, 0.9), 0 0 0 9999px rgba(10, 14, 18, 0.62);
+  transition: top 0.25s ease, left 0.25s ease, width 0.25s ease, height 0.25s ease;
+  pointer-events: none;
+}
+
+.rx-tour-blocker {
+  position: fixed;
+  inset: 0;
+}
+
+.rx-tour-card {
+  position: fixed;
+  box-sizing: border-box;
+  max-height: calc(100vh - 24px);
+  overflow-y: auto;
+  padding: 18px 20px 16px;
+  border-radius: 16px;
+  background: var(--rx-surface, #fff);
+  color: var(--rx-ink, #303031);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+  outline: none;
+  animation: rx-tour-in 0.22s ease;
+}
+
+@keyframes rx-tour-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rx-tour-card { animation: none; }
+  .rx-tour-spot { transition: none; }
+}
+
+.rx-tour-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.rx-tour-count {
+  color: var(--rx-brand, #27658d);
+  font-size: var(--rx-fs-2xs, 12px);
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.rx-tour-close {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  margin-right: -8px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--rx-muted, #5a5e62);
+  cursor: pointer;
+}
+
+.rx-tour-close:hover {
+  background: var(--rx-soft, #f4f5f6);
+}
+
+.rx-tour-emoji {
+  font-size: 34px;
+  line-height: 1;
+  margin: 2px 0 6px;
+}
+
+.rx-tour-card h2 {
+  margin: 4px 0 8px;
+  font-size: var(--rx-fs-xl, 19px);
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.rx-tour-body {
+  color: var(--rx-ink, #303031);
+  font-size: var(--rx-fs-sm, 14px);
+  line-height: 1.55;
+}
+
+.rx-tour-body p {
+  margin: 0 0 8px;
+}
+
+.rx-tour-body ul {
+  margin: 0 0 8px;
+  padding-left: 18px;
+}
+
+.rx-tour-body li {
+  margin-bottom: 4px;
+}
+
+.rx-tour-body strong {
+  color: var(--rx-ink, #303031);
+}
+
+.rx-tour-tip {
+  margin-top: 6px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--rx-brand-soft, #e7f0f5);
+  font-size: var(--rx-fs-xs, 13px);
+}
+
+.rx-tour-progress {
+  height: 4px;
+  margin: 12px 0 14px;
+  border-radius: 999px;
+  background: var(--rx-soft, #f4f5f6);
+  overflow: hidden;
+}
+
+.rx-tour-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--rx-brand, #27658d);
+  transition: width 0.25s ease;
+}
+
+.rx-tour-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.rx-tour-btn,
+.rx-tour-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 42px;
+  padding: 0 16px;
+  border-radius: 12px;
+  font: inherit;
+  font-size: var(--rx-fs-sm, 14px);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.rx-tour-btn {
+  border: 1px solid var(--rx-line-strong, #bcbec3);
+  background: var(--rx-surface, #fff);
+  color: var(--rx-ink, #303031);
+}
+
+.rx-tour-btn-primary {
+  border-color: var(--rx-brand, #27658d);
+  background: var(--rx-brand, #27658d);
+  color: #fff;
+}
+
+[data-theme="dark"] .rx-tour-btn-primary {
+  color: #12212b;
+}
+
+.rx-tour-link {
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: var(--rx-muted, #5a5e62);
+}
+
+/* Botón "Guía" de la barra superior */
+.rx-help-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  min-height: 36px;
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.045);
+  color: #d2d3d6;
+  cursor: pointer;
+}
+
+.rx-help-button:hover {
+  border-color: rgba(111, 165, 195, 0.35);
+  color: #ffffff;
+}
+
+.app-navbar .rx-help-button {
+  border-color: var(--border-light, #d2d3d6);
+  background: transparent;
+  color: inherit;
+}
