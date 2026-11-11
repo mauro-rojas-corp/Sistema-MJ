@@ -131,7 +131,13 @@ mientras está activado.
   que termine de cargar y a que se dibuje el menú) y se hace clic en «Salir»
   (`<a class="dropdown-item" href="/eset/logout">`); el resultado se confirma
   viendo la pantalla de acceso (v2.11: antes se perdía con el cambio de página
-  y la primera vez parecía fallar). Respaldo: `/eset/logout`. Después se cierran todas
+  y la primera vez parecía fallar). Respaldo: `/eset/logout`.
+  v2.12: el clic se hace apenas aparece «Salir», sin esperar a que la página
+  termine de cargar todo (el portal real tarda en «terminar» y la extensión
+  parecía quieta); si ya está en el menú principal, no recarga. El botón del
+  panel queda en «Cerrando sesión…» hasta terminar (antes se redibujaba como
+  si nada y había que tocarlo otra vez). Login y «Presentar Declaración»
+  tampoco esperan la carga completa. Después se cierran todas
   las demás ventanas de Marangatu. Lo mismo hacen el botón «Cerrar sesión» del
   panel y el pedido de la app (`APP_CERRAR_SESION`).
 - **Mensajes a las pestañas:** cada content script responde sólo a sus

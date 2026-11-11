@@ -47,8 +47,9 @@ async function marangatu(req, res, cuerpo) {
     st.user = null; st.logouts += 1; return redir('https://marangatu.set.gov.py/eset/login'); }
   if (!st.user) return redir('https://marangatu.set.gov.py/eset/login');
   if (p === '/eset/' || p === '/eset') {
-    return html(`<div id="nav"></div><script>setTimeout(() => { document.getElementById('nav').innerHTML = ${'`'}${navbar().replace(/`/g, '')}${'`'}; }, 800);</script><div>CONSULTAS</div><a href="/eset/recibirDDJJContribuyente.do?_cyp=T${Date.now()}" ${VARIANTE_PRESENTAR_NUEVA ? 'target="_blank" rel="opener"' : ''} title="Presentar Declaración">Presentar Declaración</a>`, 'Bienvenido | MARANGATU');
+    return html(`<div id="nav"></div><script>setTimeout(() => { document.getElementById('nav').innerHTML = ${'`'}${navbar().replace(/`/g, '')}${'`'}; }, 800);</script><div>CONSULTAS</div><img src="/eset/lento.png" alt=""><a href="/eset/recibirDDJJContribuyente.do?_cyp=T${Date.now()}" ${VARIANTE_PRESENTAR_NUEVA ? 'target="_blank" rel="opener"' : ''} title="Presentar Declaración">Presentar Declaración</a>`, 'Bienvenido | MARANGATU');
   }
+  if (p === '/eset/lento.png') { setTimeout(() => { res.writeHead(200, { 'content-type': 'image/png' }); res.end(); }, Number(process.env.LENTO_MS || 15000)); return; }
   if (p === '/eset/mantenerAbmXsl.do') return html(`<h2>Visión Integral del Contribuyente</h2><button name="botonConsultar">Búsqueda</button>`);
   if (p === '/eset/recibirDDJJContribuyente.do') {
     return html(`<div id="app"><h3>Presentar declaración</h3>
@@ -182,8 +183,11 @@ await completarHastaFormulario('3', 3000000);
 ok(marangatuTabs().every((p) => !p.url().includes('mantenerAbmXsl')), '3. no quedaron ventanas del cliente A');
 
 // 4) Cerrar sesión desde la app
+let t0 = Date.now();
 r = await enviar({ action: 'APP_CERRAR_SESION' });
+const seg4 = (Date.now() - t0) / 1000;
 await dormir(800);
+ok(seg4 < 8, `4. cerró la sesión al primer pedido y rápido aunque la página tarde en cargar (${seg4.toFixed(1)} s)`);
 ok(r && r.ok && st.user === null, '4. cerrar sesión desde la app: ' + JSON.stringify(r));
 ok(marangatuTabs().length === 1 && marangatuTabs()[0].url().includes('/eset/login'), `4. quedó una sola ventana de Marangatu, en el acceso (${marangatuTabs().map((p) => p.url()).join(', ')})`);
 
@@ -197,6 +201,46 @@ const l5 = st.logouts;
 r = await enviar({ action: 'APP_AUTO_LOGIN', user: '80000003', pass: 'x' });
 ok(r && r.ok, '5. «Abrir Marangatu» con una sesión iniciada a mano: ' + JSON.stringify(r));
 ok(st.logouts === l5 + 1 && !!(await esperar(() => st.user === '80000003', 8000)), '5. cerró la sesión manual y entró con el cliente pedido');
+
+// 6) Botón «Cerrar sesión» del panel Ekuatia (un solo clic), con el menú
+//    principal tardando en terminar de cargar y otra ventana de Marangatu abierta.
+async function clicEnPanel(page, textos, soloBuscar = false) {
+  const cdp = await ctx.newCDPSession(page);
+  const { root } = await cdp.send('DOM.getDocument', { depth: -1, pierce: true });
+  let hallado = null;
+  const recorrer = (n) => {
+    if (hallado) return;
+    if (n.nodeName === 'BUTTON') {
+      const txt = (n.children || []).map((c) => c.nodeValue || '').join('') + (n.children || []).flatMap((c) => (c.children || []).map((d) => d.nodeValue || '')).join('');
+      if (textos.some((t) => txt.includes(t))) { hallado = n; return; }
+    }
+    for (const c of [...(n.children || []), ...(n.shadowRoots || []), ...(n.contentDocument ? [n.contentDocument] : [])]) recorrer(c);
+  };
+  recorrer(root);
+  if (!hallado || soloBuscar) { await cdp.detach(); return !!hallado; }
+  const { object } = await cdp.send('DOM.resolveNode', { backendNodeId: hallado.backendNodeId });
+  await cdp.send('Runtime.callFunctionOn', { objectId: object.objectId, functionDeclaration: 'function () { this.click(); }' });
+  await cdp.detach();
+  return true;
+}
+const pagina5 = marangatuTabs().find((p) => /\/eset\/?$/.test(new URL(p.url()).pathname)) || marangatuTabs()[0];
+if (!/\/eset\/?$/.test(new URL(pagina5.url()).pathname)) await pagina5.goto('https://marangatu.set.gov.py/eset/', { waitUntil: 'commit' });
+const extra = await ctx.newPage();
+await extra.goto('https://marangatu.set.gov.py/eset/mantenerAbmXsl.do');
+await pagina5.bringToFront();
+await dormir(2500); // el panel lee la sesión
+// Abre el panel si está como chip y toca «Cerrar sesión» UNA vez.
+if (!(await clicEnPanel(pagina5, ['Cerrar sesión'], true))) { await clicEnPanel(pagina5, ['Ekuatia']); await dormir(400); }
+const l6 = st.logouts;
+t0 = Date.now();
+const tocado = await clicEnPanel(pagina5, ['Cerrar sesión']);
+ok(tocado, '6. se tocó «Cerrar sesión» del panel (un clic)');
+const cerro6 = await esperar(() => st.user === null, 20000, 100);
+const seg6 = (Date.now() - t0) / 1000;
+ok(!!cerro6 && st.logouts === l6 + 1, `6. un solo clic del panel cerró la sesión en ${seg6.toFixed(1)} s`);
+ok(seg6 < 6, '6. sin quedarse quieto aunque la página tarde en cargar');
+await esperar(() => marangatuTabs().length === 1, 8000);
+ok(marangatuTabs().length === 1, `6. cerró las demás ventanas de Marangatu (quedan ${marangatuTabs().length})`);
 
 ok(errores.length === 0, 'sin errores en la extensión ' + errores.join(' / '));
 console.log('   SALIDAS desde:', JSON.stringify(st.salidas));

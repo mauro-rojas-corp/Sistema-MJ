@@ -130,8 +130,10 @@ async function esperarPaginaLogin(tabId, ms = 15000) {
   while (Date.now() < fin) {
     let tab = null;
     try { tab = await chrome.tabs.get(tabId); } catch { return false; }
+    // La dirección del acceso alcanza (no hace falta esperar a que la página
+    // termine de cargar todo).
+    if (esUrlMarangatu(tab.url) && enRutaLogin(tab.url)) return true;
     if (tab.status === 'complete' && esUrlMarangatu(tab.url)) {
-      if (enRutaLogin(tab.url)) return true;
       const s = await mensajePanel(tabId, { action: 'PANEL_LEER_SESION' }, 1);
       if (s && s.ok && s.enLogin) return true;
     }
@@ -193,62 +195,58 @@ async function pestanaConSesion(tabId) {
 // Devuelve true si la pestaña quedó en la pantalla de acceso.
 const SALIR_URL = 'https://marangatu.set.gov.py/eset/logout';
 
-// Navega la pestaña y espera a que esa navegación termine de cargar (no la
-// página anterior: se espera a que empiece a cargar y después a que termine).
-function navegarYEsperar(tabId, url, ms = 20000) {
-  return new Promise((resolve) => {
-    let listo = false;
-    let empezo = false;
-    const terminar = (v) => {
-      if (listo) return;
-      listo = true;
-      clearTimeout(limite);
-      chrome.tabs.onUpdated.removeListener(oyente);
-      resolve(v);
-    };
-    const oyente = (id, info) => {
-      if (id !== tabId) return;
-      if (info.status === 'loading') empezo = true;
-      else if (info.status === 'complete' && empezo) terminar(true);
-    };
-    const limite = setTimeout(() => terminar(false), ms);
-    chrome.tabs.onUpdated.addListener(oyente);
-    chrome.tabs.update(tabId, { url }).catch(() => terminar(false));
-  });
+const esInicio = (u) => {
+  try { const x = new URL(u); return x.hostname === MARANGATU_HOST && /^\/eset\/?$/.test(x.pathname); } catch { return false; }
+};
+
+// Hace clic en «Salir» apenas aparece en el menú principal, SIN esperar a que
+// la página termine de cargar todo (el portal real tarda en «terminar» aunque
+// el menú ya se vea). Devuelve 'clic', 'sin-sesion' (el portal mandó al
+// acceso) o 'no' (no apareció a tiempo).
+async function clicSalirCuandoAparezca(tabId, ms = 15000) {
+  const fin = Date.now() + ms;
+  while (Date.now() < fin) {
+    let t = null;
+    try { t = await chrome.tabs.get(tabId); } catch { return 'no'; }
+    if (esUrlMarangatu(t.url) && enRutaLogin(t.url)) return 'sin-sesion';
+    if (esInicio(t.url)) {
+      try {
+        const r = await chrome.scripting.executeScript({ target: { tabId }, func: clicEnSalir, injectImmediately: true });
+        if (r && r[0] && r[0].result) return 'clic';
+      } catch { /* la página está cambiando: se reintenta */ }
+    }
+    await dormir(250);
+  }
+  return 'no';
 }
 
 async function cerrarSesionMarangatu(tabId) {
-  if (!(await navegarYEsperar(tabId, INICIO_URL))) return false;
-  if (await esperarPaginaLogin(tabId, 1200)) return true; // no había sesión
-
-  // Clic en «Salir». La página cambia enseguida, así que el resultado se
-  // confirma viendo aparecer el acceso (no esperando la respuesta del clic).
-  let encontrado = false;
-  try {
-    const r = await chrome.scripting.executeScript({ target: { tabId }, func: clicEnSalir });
-    encontrado = !!(r && r[0] && r[0].result);
-  } catch { encontrado = true; /* la página ya estaba cambiando */ }
-  if (encontrado) {
-    if (await esperarPaginaLogin(tabId, 6000)) return true;
+  let t = null;
+  try { t = await chrome.tabs.get(tabId); } catch { return false; }
+  if (esUrlMarangatu(t.url) && enRutaLogin(t.url)) return true; // ya está en el acceso
+  // Si ya está en el menú principal, no se recarga: se pulsa «Salir» ahí.
+  if (!esInicio(t.url)) {
+    try { await chrome.tabs.update(tabId, { url: INICIO_URL }); } catch { return false; }
+  }
+  const r = await clicSalirCuandoAparezca(tabId);
+  if (r === 'sin-sesion') return true;
+  if (r === 'clic') {
+    if (await esperarPaginaLogin(tabId, 8000)) return true;
     // ¿Quedó una confirmación («¿Desea salir?») en pantalla? Se acepta.
-    try { await chrome.scripting.executeScript({ target: { tabId }, func: confirmarSalida }); } catch { /* ya cambió */ }
+    try { await chrome.scripting.executeScript({ target: { tabId }, func: confirmarSalida, injectImmediately: true }); } catch { /* ya cambió */ }
     if (await esperarPaginaLogin(tabId, 10000)) return true;
   }
-
   // Respaldo: la dirección de «Salir».
-  if (!(await navegarYEsperar(tabId, SALIR_URL))) return false;
+  try { await chrome.tabs.update(tabId, { url: SALIR_URL }); } catch { return false; }
   return esperarPaginaLogin(tabId, 12000);
 }
 
-// Inyectada en el menú principal: espera a que aparezca «Salir» (el menú se
-// dibuja después de cargar) y lo pulsa un instante DESPUÉS de responder, para
-// que la respuesta no se pierda con el cambio de página.
-async function clicEnSalir() {
-  const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
-  const buscar = () => document.querySelector('a.dropdown-item[href$="/eset/logout"], a[href$="/eset/logout"]')
+// Inyectada en el menú principal: si «Salir» ya está, lo pulsa un instante
+// DESPUÉS de responder (para que la respuesta no se pierda con el cambio de
+// página). Si todavía no se dibujó, devuelve false y se reintenta.
+function clicEnSalir() {
+  const link = document.querySelector('a.dropdown-item[href$="/eset/logout"], a[href$="/eset/logout"]')
     || [...document.querySelectorAll('a.dropdown-item, a')].find((a) => /^\s*salir\s*$/i.test(a.textContent || ''));
-  let link = buscar();
-  for (let i = 0; !link && i < 40; i += 1) { await esperar(200); link = buscar(); }
   if (!link) return false;
   setTimeout(() => link.click(), 50);
   return true;

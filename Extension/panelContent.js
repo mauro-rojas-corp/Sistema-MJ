@@ -106,7 +106,15 @@
     if (confirmar) confirmar.click();
   }
 
+  // Mientras se cierra la sesión el panel lo recuerda: si se vuelve a dibujar
+  // (llega un aviso), el botón sigue en «Cerrando sesión…» y deshabilitado,
+  // así no parece que no pasó nada ni invita a tocarlo otra vez.
+  let cerrandoHasta = 0;
+  const cerrando = () => Date.now() < cerrandoHasta;
+
   async function cerrarSesionLocal() {
+    cerrandoHasta = Date.now() + 25000;
+    dibujar();
     // El cierre completo lo hace el service worker: menú principal → «Salir»
     // → cierra las demás ventanas de Marangatu. Si no responde, se hace acá.
     try {
@@ -114,7 +122,7 @@
       if (r && r.ok) return r;
     } catch { /* extensión recargada */ }
     const el = await prepararSalida();
-    if (!el) return { ok: false, error: 'No encontré el control para cerrar la sesión.' };
+    if (!el) { cerrandoHasta = 0; return { ok: false, error: 'No encontré el control para cerrar la sesión.' }; }
     await ejecutarSalida(el);
     return { ok: true };
   }
@@ -256,15 +264,16 @@
     if (e.aviso) cuerpo.append(h('div', { className: 'msg alerta' }, e.aviso));
 
     const botones = h('div', { className: 'botones' });
-    const accion = (texto, fn, fuerte) => botones.append(h('button', { textContent: texto, className: fuerte ? 'fuerte' : '', onclick: async (ev) => {
+    const accion = (texto, fn, fuerte, enCurso) => botones.append(h('button', { textContent: enCurso && cerrando() ? enCurso : texto, disabled: !!(enCurso && cerrando()), className: fuerte ? 'fuerte' : '', onclick: async (ev) => {
       ev.currentTarget.disabled = true;
+      if (enCurso) ev.currentTarget.textContent = enCurso; // se nota que está trabajando
       try { await fn(); } finally { setTimeout(() => { sesionLocal = leerSesion(); informarSesion(); dibujar(); }, 1500); }
     } }));
     if (e.activo) {
       accion('Cancelar tarea', () => chrome.runtime.sendMessage({ action: 'PANEL_CANCELAR' }));
-      accion('Cancelar y cerrar sesión', async () => { await chrome.runtime.sendMessage({ action: 'PANEL_CANCELAR' }); await dormir(400); await cerrarSesionLocal(); }, true);
+      accion('Cancelar y cerrar sesión', async () => { await chrome.runtime.sendMessage({ action: 'PANEL_CANCELAR' }); await dormir(400); await cerrarSesionLocal(); }, true, 'Cerrando sesión…');
     } else {
-      if (sesion.logueado) accion('Cerrar sesión', cerrarSesionLocal, true);
+      if (sesion.logueado) accion('Cerrar sesión', cerrarSesionLocal, true, 'Cerrando sesión…');
       if (termino && e.fase === 'terminado') accion('Dejar abierta', async () => { desistido = e.ts; });
     }
     botones.append(h('button', { textContent: 'Ocultar', onclick: () => { oculto = true; try { sessionStorage.setItem('ekuPanelOculto', '1'); } catch { /* sin storage */ } dibujar(); } }));

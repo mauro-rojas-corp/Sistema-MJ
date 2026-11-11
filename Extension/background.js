@@ -170,36 +170,35 @@ function esperarPestanaHija(tabId, ms) {
 }
 
 function irAPresentarCuandoEntre(tabId) {
+  // Se revisa la pestaña cada medio segundo (sin esperar a que la página
+  // termine de cargar todo) hasta encontrar el enlace, entrar o rendirse.
   const limite = Date.now() + PRESENTAR_TIMEOUT_MS;
-  let hecho = false;
-  const intentar = async (tab) => {
-    if (hecho) return;
-    if (Date.now() > limite) { chrome.tabs.onUpdated.removeListener(onUpdated); return; }
-    const url = String((tab && tab.url) || '');
-    if (!esUrlMarangatu(url) || url.includes('/login')) return;
-    if (url.includes('recibirDDJJContribuyente.do')) { hecho = true; chrome.tabs.onUpdated.removeListener(onUpdated); return; }
-    let res = null;
-    try { res = await chrome.scripting.executeScript({ target: { tabId }, func: buscarPresentarDeclaracion }); } catch { res = null; }
-    const enlace = res && res[0] && res[0].result;
-    if (!enlace || hecho) return;
-    hecho = true;
-    chrome.tabs.onUpdated.removeListener(onUpdated);
-    if (enlace.nueva) await permitirVentanasMarangatu();
-    const hija = enlace.nueva ? esperarPestanaHija(tabId, 4000) : null;
-    try { await chrome.scripting.executeScript({ target: { tabId }, func: clicPresentarDeclaracion }); } catch { /* respaldo abajo */ }
-    if (hija && !(await hija)) {
-      // Chrome bloqueó la ventana: se abre la pestaña igual (sin «ventana que
-      // la abrió»; Marangatu sigue funcionando, salvo su botón «Cerrar»).
-      chrome.tabs.create({ url: enlace.href, openerTabId: tabId, active: true }).catch(() => {});
+  (async () => {
+    await dormir(400);
+    while (Date.now() < limite) {
+      let tab = null;
+      try { tab = await chrome.tabs.get(tabId); } catch { return; } // pestaña cerrada
+      const url = String(tab.url || '');
+      if (url.includes('recibirDDJJContribuyente.do')) return; // ya entró
+      if (esUrlMarangatu(url) && !enRutaLogin(url)) {
+        let res = null;
+        try { res = await chrome.scripting.executeScript({ target: { tabId }, func: buscarPresentarDeclaracion, injectImmediately: true }); } catch { res = null; }
+        const enlace = res && res[0] && res[0].result;
+        if (enlace) {
+          if (enlace.nueva) await permitirVentanasMarangatu();
+          const hija = enlace.nueva ? esperarPestanaHija(tabId, 4000) : null;
+          try { await chrome.scripting.executeScript({ target: { tabId }, func: clicPresentarDeclaracion, injectImmediately: true }); } catch { /* respaldo abajo */ }
+          if (hija && !(await hija)) {
+            // Chrome bloqueó la ventana: se abre la pestaña igual (sin «ventana
+            // de origen»; Marangatu sigue funcionando, salvo su botón «Cerrar»).
+            chrome.tabs.create({ url: enlace.href, openerTabId: tabId, active: true }).catch(() => {});
+          }
+          return;
+        }
+      }
+      await dormir(500);
     }
-  };
-  const onUpdated = (id, info, tab) => {
-    if (id !== tabId || info.status !== 'complete') return;
-    intentar(tab);
-  };
-  chrome.tabs.onUpdated.addListener(onUpdated);
-  // Sesión que se mantuvo (mismo cliente): la página ya está cargada.
-  chrome.tabs.get(tabId).then((tab) => { if (tab && tab.status === 'complete') intentar(tab); }).catch(() => {});
+  })();
 }
 
 // Inyectadas en Marangatu. buscar: el enlace de «Presentar Declaración» y si
@@ -269,21 +268,22 @@ function abrirLogin(user, pass, despues, opciones = {}) {
     if (r.aviso) await publicarAviso(r.aviso);
     if (r.mismoCliente) {
       // Misma sesión del cliente: se vuelve al inicio para arrancar de ahí.
-      await navegarYEsperar(tabId, INICIO_URL);
+      try { await chrome.tabs.update(tabId, { url: INICIO_URL }); } catch { /* sigue igual */ }
       await publicarAviso('Se reutiliza la sesión abierta de este cliente en Marangatu.');
     }
     if (despues) await despues(tabId, r);
     if (user && !r.sesionActiva) {
-      // El formulario puede dibujarse tarde: se reintenta unas veces.
-      for (let i = 0; i < 6; i += 1) {
+      // Apenas aparece el formulario de acceso (sin esperar a que la página
+      // termine de cargar todo); se reintenta hasta ~9 s.
+      for (let i = 0; i < 30; i += 1) {
         let res = null;
-        try { res = await chrome.scripting.executeScript({ target: { tabId }, func: inyectarLogin, args: [user, pass] }); } catch { res = null; }
+        try { res = await chrome.scripting.executeScript({ target: { tabId }, func: inyectarLogin, args: [user, pass], injectImmediately: true }); } catch { res = null; }
         if (res && res[0] && res[0].result) {
           // Se recuerda con qué cliente se entró (sólo el RUC, nunca la clave).
           await chrome.storage.session.set({ [CLIENTE_KEY]: { ruc: rucPedido, ts: Date.now() } });
           break;
         }
-        await dormir(400);
+        await dormir(300);
       }
     }
     return { ok: true, tabId, sesionActiva: !!r.sesionActiva, mismoCliente: !!r.mismoCliente };
