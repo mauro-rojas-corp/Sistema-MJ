@@ -27,7 +27,7 @@
   "externally_connectable": {
     "matches": [
       "http://localhost/*",
-      "https://control-total-clientes-pruebas.vercel.app/*"
+      "https://sistema-mj.vercel.app/*"
     ]
   },
   "content_scripts": [

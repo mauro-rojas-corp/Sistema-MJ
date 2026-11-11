@@ -1,6 +1,6 @@
 # Entorno de pruebas
 
-Este repositorio (`mauro-rojas-corp/control-total-clientes-iva-pruebas`) es
+Este repositorio (`mauro-rojas-corp/Sistema-MJ`) es
 una **copia** de `MJEstudioContable/Control-Total-Clientes-IVA` para probar
 cambios sin tocar el original. Lo que funciona acá se pasa después al
 original.
@@ -205,7 +205,7 @@ Archivos: `src/iva/ivaCore.js` (`periodoFiscalDeHoja`), `src/iva/IvaModule.jsx`,
 | Pieza | Real | Pruebas |
 | ----- | ---- | ------- |
 | Código | `MJEstudioContable/Control-Total-Clientes-IVA` | este repositorio |
-| App | `https://control-total-clientes.vercel.app` | `https://control-total-clientes-pruebas.vercel.app` |
+| App | `https://control-total-clientes.vercel.app` | `https://sistema-mj.vercel.app` |
 | Backend | Apps Script y planillas reales | proyecto `Control Total PRUEBAS` y planillas `PRUEBAS - …` con datos ficticios |
 | Extensión | Ekuatia Login · `dffknnjnidhfldehfalchalikfkjbehm` | Ekuatia Login PRUEBAS · `hljageieeeljncgmbbpmkflpdminodom` |
 
@@ -246,10 +246,9 @@ instalador.
 ### 2. App de pruebas (Vercel)
 
 1. En <https://vercel.com/new>, importá
-   `mauro-rojas-corp/control-total-clientes-iva-pruebas`.
-2. **Project name:** `control-total-clientes-pruebas` (así la dirección es
-   `https://control-total-clientes-pruebas.vercel.app`; si Vercel da otra,
-   avisá para regenerar la extensión con esa).
+   `mauro-rojas-corp/Sistema-MJ`.
+2. Dirección fija: en **Settings → Domains** del proyecto, `sistema-mj.vercel.app`
+   (si se cambia, regenerar la extensión con la nueva; ver abajo).
 3. **Environment Variables:**
    - `VITE_BACKEND_URL` = URL `…/exec` del Apps Script **de pruebas**
    - `VITE_API_TOKEN` = el `API_TOKEN` **de pruebas**
@@ -271,7 +270,7 @@ Para regenerarla (después de tocar `Extension/`, o si cambia la dirección de
 la app de pruebas):
 
 ```
-node pruebas/generar-extension.mjs https://control-total-clientes-pruebas.vercel.app
+node pruebas/generar-extension.mjs https://sistema-mj.vercel.app
 ```
 
 ## Ojo: lo que las pruebas NO aíslan

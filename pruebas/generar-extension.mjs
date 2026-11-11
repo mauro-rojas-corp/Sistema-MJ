@@ -16,7 +16,7 @@ const RAIZ = join(dirname(fileURLToPath(import.meta.url)), '..');
 const ORIGEN_EXT = join(RAIZ, 'Extension');
 const DESTINO = join(RAIZ, 'pruebas', 'Extension-pruebas');
 
-const APP_PRUEBAS = new URL(process.argv[2] || 'https://control-total-clientes-pruebas.vercel.app').origin;
+const APP_PRUEBAS = new URL(process.argv[2] || 'https://sistema-mj.vercel.app').origin;
 const NOMBRE = 'Ekuatia Login PRUEBAS';
 // Clave pública propia de la extensión de pruebas. ID resultante:
 const ID_PRUEBAS = 'hljageieeeljncgmbbpmkflpdminodom';
