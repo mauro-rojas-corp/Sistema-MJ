@@ -951,6 +951,15 @@
 }
 
 .real-exec-table {
+  /* Una única plantilla evita que cada fila calcule por separado los
+     anchos de columnas que antes usaban `auto`. */
+  --real-exec-client-columns:
+    38px
+    minmax(0, 2fr)
+    minmax(105px, 1fr)
+    82px
+    minmax(132px, 1fr)
+    16px;
   overflow: hidden;
   border: 1px solid var(--rx-line);
   border-radius: 14px;
@@ -959,13 +968,7 @@
 .real-exec-table-head,
 .real-exec-client-row {
   display: grid;
-  grid-template-columns:
-    minmax(28px, auto)
-    minmax(180px, 1.6fr)
-    minmax(96px, 0.8fr)
-    minmax(64px, auto)
-    minmax(64px, auto)
-    15px;
+  grid-template-columns: var(--real-exec-client-columns);
   align-items: center;
   gap: 9px;
   text-align: left;
@@ -975,12 +978,23 @@
   min-height: calc(2.6em + 4px);
   padding: 0 12px;
   border-bottom: 1px solid var(--rx-line);
+  border-radius: 13px 13px 0 0;
   background: var(--rx-soft);
+  background-clip: padding-box;
   color: var(--rx-subtle);
   font-size: var(--rx-fs-2xs);
   font-weight: 800;
   letter-spacing: 0.09em;
   text-transform: uppercase;
+}
+
+.real-exec-table-head > :first-child,
+.real-exec-row-num {
+  text-align: center;
+}
+
+.real-exec-table-head > :nth-child(5) {
+  text-align: right;
 }
 
 /* Cuerpo virtualizado: alto total reservado por el virtualizador y filas
@@ -1263,15 +1277,14 @@
     justify-content: flex-start;
   }
 
-  .real-exec-table-head,
-  .real-exec-client-row {
-    grid-template-columns:
-      minmax(24px, auto)
-      minmax(150px, 1.5fr)
-      minmax(88px, 0.8fr)
-      minmax(58px, auto)
-      minmax(58px, auto)
-      13px;
+  .real-exec-table {
+    --real-exec-client-columns:
+      30px
+      minmax(0, 1.6fr)
+      minmax(92px, 1fr)
+      74px
+      minmax(124px, 1fr)
+      14px;
   }
 }
 

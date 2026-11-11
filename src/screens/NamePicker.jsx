@@ -28,17 +28,24 @@ const itemVariants = {
 export default function NamePicker({ onPick, onReady }) {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState('');
 
-  function loadUsers() {
-    setLoading(true);
+  function loadUsers(force = false) {
+    // Si ya hay una lista visible, mantenela mientras se consulta la planilla.
+    // Sin usuarios cargados, mostramos el esqueleto de carga. Una actualización
+    // manual también activa el estado animado aunque todavía no haya usuarios.
+    if (users.length === 0) setLoading(true);
+    if (force || users.length > 0) setRefreshing(true);
     setError('');
+
     api
-      .listUsers()
+      .listUsers(force)
       .then(setUsers)
       .catch((err) => setError(err.message))
       .finally(() => {
         setLoading(false);
+        setRefreshing(false);
         onReady?.();
       });
   }
@@ -54,7 +61,7 @@ export default function NamePicker({ onPick, onReady }) {
   }
 
   return (
-    <div className="screen centered">
+    <div className="screen centered name-picker-screen">
       <motion.div
         className="hero-card"
         initial={{ opacity: 0, y: 20, scale: 0.97 }}
@@ -69,7 +76,22 @@ export default function NamePicker({ onPick, onReady }) {
         >
           <Users size={28} />
         </motion.div>
-        <h1 className="picker-title">¿Quién sos?</h1>
+        <div className="picker-title-row">
+          <h1 className="picker-title">¿Quién sos?</h1>
+          <motion.button
+            type="button"
+            className="back-btn picker-refresh-icon-btn"
+            onClick={() => loadUsers(true)}
+            disabled={loading || refreshing}
+            aria-label="Actualizar usuarios"
+            aria-busy={loading || refreshing}
+            title="Buscar usuarios actualizados en la hoja Usuarios de Google Sheets"
+            whileHover={{ scale: loading || refreshing ? 1 : 1.1 }}
+            whileTap={{ scale: loading || refreshing ? 1 : 0.9 }}
+          >
+            <RefreshCw size={14} className={loading || refreshing ? 'animate-spin' : undefined} />
+          </motion.button>
+        </div>
         <p className="picker-subtitle">
           Seleccioná tu usuario para registrar tus cambios en la planilla remota.
         </p>
@@ -85,28 +107,20 @@ export default function NamePicker({ onPick, onReady }) {
         {error && (
           <motion.div
             className="error-banner"
+            role="alert"
             style={{ textAlign: 'left' }}
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
           >
             <AlertCircle size={20} style={{ flexShrink: 0 }} />
             <div>
-              <strong>Error de conexión</strong>
+              <strong>{users.length ? 'No se pudo actualizar la lista' : 'Error de conexión'}</strong>
               <div style={{ fontSize: 'calc(13px * var(--ui-font-scale, 1))', marginTop: '2px' }}>{error}</div>
-              <motion.button
-                className="btn-secondary"
-                whileHover={{ scale: 1.04 }}
-                whileTap={{ scale: 0.95 }}
-                style={{ marginTop: '10px', padding: '6px 12px', fontSize: 'calc(13px * var(--ui-font-scale, 1))' }}
-                onClick={loadUsers}
-              >
-                <RefreshCw size={14} /> Reintentar
-              </motion.button>
             </div>
           </motion.div>
         )}
 
-        {!loading && !error && (
+        {!loading && users.length > 0 && (
           <motion.div
             className="picker-grid"
             variants={containerVariants}
@@ -119,19 +133,16 @@ export default function NamePicker({ onPick, onReady }) {
               return (
                 <motion.button
                   key={name}
-                  className="picker-btn"
+                  className="picker-btn picker-user-btn"
                   variants={itemVariants}
                   whileHover={{ scale: 1.03, y: -2 }}
                   whileTap={{ scale: 0.96 }}
                   onClick={() => choose(name)}
-                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-start' }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <div className="avatar-badge" style={{ width: '38px', height: '38px' }}>
-                      <User size={20} />
-                    </div>
-                    <span style={{ fontWeight: 600 }}>{name}</span>
+                  <div className="avatar-badge picker-avatar-badge" aria-hidden="true">
+                    <User size={20} />
                   </div>
+                  <span className="picker-user-name">{name}</span>
                 </motion.button>
               );
             })}

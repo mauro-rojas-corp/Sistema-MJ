@@ -39,6 +39,7 @@ original.
 | CAMBIO-2 | Guía interactiva del sistema (botón «?» y automática la primera vez) | En prueba | No |
 | CAMBIO-3 | Sugerencias de los usuarios (lamparita junto al Buzón); el administrador las ve con el nombre | En prueba | No |
 | CAMBIO-4 | Ambientación por época (fechas especiales y estaciones), guardada por usuario | En prueba | No |
+| CAMBIO-5 | Traído de `Jorgeeayala/Sistema-MJ`: actualizar usuarios en «¿Quién sos?» y columnas parejas en la lista de clientes | En prueba | No |
 
 ### CAMBIO-1 · Ficha del cliente y Buzón
 
@@ -162,6 +163,17 @@ Qué revisar:
   Al elegir una ambientación se muestra como vista previa.
 - Se guarda en el usuario: la misma elección en la PC y en el celular; cada
   usuario tiene la suya.
+
+### CAMBIO-5 · Cambios de `Jorgeeayala/Sistema-MJ`
+
+Ese repositorio es una copia de este en el `9c1175b` (06/11) con 3 archivos
+propios, que se trajeron tal cual (no los habíamos tocado después):
+- `src/screens/NamePicker.jsx`: botón ↻ junto a «¿Quién sos?» que vuelve a
+  leer la hoja Usuarios sin perder la lista visible; nombres largos en
+  varias líneas.
+- `src/styles.css`: estilos de esa pantalla.
+- `src/ui-executive/preview.css`: columnas de la lista de clientes con una
+  sola plantilla (más parejas y livianas).
 
 ## Las tres piezas separadas
 
