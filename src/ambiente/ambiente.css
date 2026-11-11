@@ -265,78 +265,57 @@
   }
 }
 
-/* ── Configuración: elegir ambientación ─────────────────────────────── */
-.settings-amb-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
-  gap: 6px;
-}
-
-.settings-amb-group {
-  margin: 12px 2px 6px;
-  color: var(--text-subtle);
-  font-size: calc(11px * var(--ui-font-scale, 1));
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.settings-amb-option {
+/* ── Configuración: elegir ambientación (un selector) ────────────── */
+.settings-amb-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  min-height: 42px;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.settings-amb-row .settings-subsection-title {
+  flex: 0 0 auto;
+}
+
+.settings-amb-select {
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 260px;
+  min-height: 38px;
   padding: 0 10px;
   border: 1px solid var(--border-light);
   border-radius: var(--radius-sm);
   background-color: var(--bg-card);
-  color: var(--text-muted);
-  cursor: pointer;
+  color: var(--text-main, inherit);
+  color-scheme: light;
   font-family: inherit;
   font-size: calc(13px * var(--ui-font-scale, 1));
   font-weight: 600;
-  text-align: left;
-  transition: background-color 0.14s ease, border-color 0.14s ease, color 0.14s ease;
+  cursor: pointer;
 }
 
-.settings-amb-option:hover {
-  background-color: var(--bg-card-hover);
+[data-theme="dark"] .settings-amb-select {
+  color-scheme: dark;
 }
 
-.settings-amb-option.is-active {
-  background-color: var(--primary-light);
-  border-color: var(--primary-border);
-  color: var(--primary);
-}
-
-.settings-amb-emoji {
-  flex: 0 0 auto;
-  width: 20px;
-  font-size: 17px;
-  line-height: 1;
-  text-align: center;
-}
-
-.settings-amb-name {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.settings-amb-select:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
 }
 
 .settings-amb-toggle {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 12px;
+  margin-top: 10px;
   color: var(--text-muted);
   font-size: calc(13px * var(--ui-font-scale, 1));
   cursor: pointer;
 }
 
 .settings-amb-toggle input {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   accent-color: var(--primary);
 }
 

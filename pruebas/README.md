@@ -148,8 +148,9 @@ Para probarlo con tu Apps Script:
    La hoja `Preferencias` se crea sola (una fila por usuario).
 
 Qué revisar:
-- Configuración → **Ambientación**: Ninguna (por defecto), Automática, y a
-  mano: Navidad (1–26/12), Año Nuevo (27/12–2/1), Semana Santa (Ramos a
+- Configuración → **Ambientación** (un solo selector desplegable; la casilla
+  de animación aparece sólo si hay una elegida): Ninguna (por defecto),
+  Automática, y a mano: Navidad (1–26/12), Año Nuevo (27/12–2/1), Semana Santa (Ramos a
   Pascua, se calcula cada año), Independencia (10–15/5), San Juan (16–30/6),
   Verano (21/12–20/3), Otoño (21/3–20/6), Invierno (21/6–20/9) y Primavera
   (21/9–20/12). En Automática las fechas especiales ganan a la estación.
