@@ -119,12 +119,14 @@ mientras está activado.
   La app ya no abre ventanas propias salvo que la extensión no responda.
 - **Sesión del cliente (v2.9):** la extensión recuerda con qué RUC entró
   (sólo el RUC, nunca la clave). Si se pide el mismo cliente, reutiliza la
-  sesión; si es otro (o una sesión iniciada a mano), la cierra, cierra las
-  demás pestañas de Marangatu que quedaron del cliente anterior y espera la
-  pantalla de acceso. Para cerrar usa el menú del usuario de la pestaña de
-  trabajo; si esa ventana no lo tiene (formulario, Visión Integral), el de
-  otra pestaña de Marangatu, o la dirección de «Cerrar sesión» que el panel
-  anotó antes. El cierre se confirma viendo la pantalla de acceso.
+  sesión; si es otro (o una sesión iniciada a mano), la cierra y cierra las
+  demás pestañas de Marangatu que quedaron de esa sesión.
+- **Cerrar sesión (v2.10, confirmado en el portal real):** la pestaña de
+  trabajo va al menú principal `https://marangatu.set.gov.py/eset/` y se hace
+  clic en «Salir» (`<a class="dropdown-item" href="/eset/logout">`); si no
+  aparece el acceso, se va directo a `/eset/logout`. Después se cierran todas
+  las demás ventanas de Marangatu. Lo mismo hacen el botón «Cerrar sesión» del
+  panel y el pedido de la app (`APP_CERRAR_SESION`).
 - **Mensajes a las pestañas:** cada content script responde sólo a sus
   propios mensajes (antes `descargaContent.js` respondía a todos y tapaba la
   respuesta del panel: la extensión creía que no había sesión y no la

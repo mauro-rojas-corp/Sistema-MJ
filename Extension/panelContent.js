@@ -12,8 +12,9 @@
 //   lo que recorre descargaContent.js) y se oculta al imprimir.
 // - Sólo lee estructura: nunca valores de campos ni datos de formularios. Del
 //   encabezado toma números que parecen un RUC para saber de quién es la sesión.
-// - Cerrar sesión busca el control de salida por heurística (enlace/botón
-//   "Salir"/"Cerrar sesión"), pendiente de confirmar con el relevamiento.
+// - «Cerrar sesión» lo hace el service worker (menú principal /eset/ → «Salir»
+//   → cierra las demás ventanas de Marangatu); si no responde, el panel busca
+//   «Salir» en la página.
 (() => {
   if (window !== window.top) return;
   if (/consultarddjjcompleta\.do/i.test(location.pathname)) return;
@@ -35,23 +36,6 @@
       const rotulo = norm(e.getAttribute('title') || e.getAttribute('aria-label') || e.getAttribute('data-tooltip'));
       return HREF_SALIR.test(href) || TEXTO_SALIR.test(texto) || TEXTO_SALIR.test(rotulo);
     }) || null;
-  }
-
-  // Dirección del control de salida aunque esté escondido (dentro del menú
-  // cerrado). El service worker la guarda para poder cerrar la sesión desde
-  // cualquier ventana, también desde las que no tienen el menú del usuario.
-  function urlSalir() {
-    for (const a of document.querySelectorAll('a[href]')) {
-      const href = a.getAttribute('href') || '';
-      if (/^\s*javascript:/i.test(href) || href === '#') continue;
-      const texto = norm(a.textContent || a.getAttribute('title') || a.getAttribute('aria-label'));
-      if (!HREF_SALIR.test(href) && !TEXTO_SALIR.test(texto)) continue;
-      try {
-        const u = new URL(a.href, location.href);
-        if (u.hostname === location.hostname) return u.href;
-      } catch { /* dirección inválida */ }
-    }
-    return '';
   }
 
   // Marangatu muestra en el encabezado el NOMBRE del usuario de la sesión, en el
@@ -92,7 +76,6 @@
       usuario: !login && menu ? norm(menu.textContent).slice(0, 80) : '',
       rucs: !login && (menu || salir) ? leerRucs() : [],
       pagina: pagina ? { id: pagina.id, nombre: pagina.nombre } : null,
-      urlSalir: login ? '' : urlSalir(),
     };
   }
 
@@ -124,6 +107,12 @@
   }
 
   async function cerrarSesionLocal() {
+    // El cierre completo lo hace el service worker: menú principal → «Salir»
+    // → cierra las demás ventanas de Marangatu. Si no responde, se hace acá.
+    try {
+      const r = await chrome.runtime.sendMessage({ action: 'PANEL_SALIR' });
+      if (r && r.ok) return r;
+    } catch { /* extensión recargada */ }
     const el = await prepararSalida();
     if (!el) return { ok: false, error: 'No encontré el control para cerrar la sesión.' };
     await ejecutarSalida(el);

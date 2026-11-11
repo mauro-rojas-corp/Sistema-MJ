@@ -41,7 +41,7 @@ original.
 | CAMBIO-4 | Ambientación por época (fechas especiales y estaciones), guardada por usuario | En prueba | No |
 | CAMBIO-5 | Traído de `Jorgeeayala/Sistema-MJ`: actualizar usuarios en «¿Quién sos?» y columnas parejas en la lista de clientes | En prueba | No |
 | CAMBIO-6 | Cada hoja vence el mes siguiente (hoja OCTUBRE → noviembre): ficha, días de retraso y Vencimientos IVA | En prueba | No |
-| CAMBIO-7 | Extensión 2.9: flujo del Formulario 120 (sesión por cliente, cierre de sesión confiable, ventanas como las abre Marangatu, completar al aparecer el formulario) | En prueba | No |
+| CAMBIO-7 | Extensión 2.10: flujo del Formulario 120 (sesión por cliente, cierre de sesión confiable, ventanas como las abre Marangatu, completar al aparecer el formulario) | En prueba | No |
 
 ### CAMBIO-1 · Ficha del cliente y Buzón
 
@@ -215,6 +215,9 @@ Qué se corrigió:
 - **Otro cliente / mismo cliente:** recuerda con qué RUC entró; mismo cliente
   → reutiliza la sesión; otro → cierra la sesión (desde la ventana que tenga
   el menú o con la dirección de salida) y las pestañas del cliente anterior.
+- **Cierre de sesión (2.10):** menú principal `/eset/` → «Salir»
+  (`/eset/logout`), como en el portal real, y se cierran todas las demás
+  ventanas de Marangatu de esa sesión (también desde el panel y la app).
 - **Ventanas:** «Presentar Declaración» se abre en la misma ventana o en una
   nueva según el enlace de Marangatu.
 - **Contexto del formulario:** `ivaContent.js` corre en todas las ventanas y
