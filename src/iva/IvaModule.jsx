@@ -32,10 +32,12 @@ import './iva.css';
 
 const IvaEditor = lazy(() => import('./IvaEditor'));
 
-// La hoja mensual de la planilla es el mes en que vencen las obligaciones;
-// el IVA que se liquida en ese mes es el del período fiscal anterior.
-// (Hoja "Octubre" → período fiscal septiembre, que vence en octubre.)
-const DESFASE_PERIODO_FISCAL = -1;
+// La hoja mensual de la planilla es el mes de los documentos: su IVA vence el
+// mes siguiente. (Hoja "Octubre" → período fiscal octubre, que vence en
+// noviembre.) Sin hoja elegida se abre el mes anterior al actual, que es el
+// que se está liquidando.
+const DESFASE_PERIODO_FISCAL = 0;
+const DESFASE_SIN_HOJA = -1;
 const REFRESH_MS = 60_000;
 
 const ESTADO_TAG = {
@@ -51,7 +53,7 @@ function initialPeriodo(year, month) {
   const y = Number(yearInSheet ? yearInSheet[1] : year);
   if (idx === null || !y) {
     const now = new Date();
-    return ym(now.getFullYear(), now.getMonth() + DESFASE_PERIODO_FISCAL);
+    return ym(now.getFullYear(), now.getMonth() + DESFASE_SIN_HOJA);
   }
   return ym(y, idx + DESFASE_PERIODO_FISCAL);
 }

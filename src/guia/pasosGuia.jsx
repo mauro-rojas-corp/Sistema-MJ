@@ -210,8 +210,8 @@ export function construirPasosGuia({ canAssign, isSuper }) {
             envía.
           </p>
           <p>
-            Cada hoja corresponde al IVA <strong>del mes anterior</strong>: en la hoja de octubre se liquida
-            septiembre, que vence en octubre. Con las flechas cambiás de período.
+            Cada hoja es el <strong>mes de los documentos</strong> y su IVA vence el mes siguiente: en la
+            hoja de octubre se liquida octubre, que vence en noviembre. Con las flechas cambiás de período.
           </p>
         </>
       ),

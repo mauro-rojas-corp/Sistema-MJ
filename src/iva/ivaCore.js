@@ -67,9 +67,10 @@ export function monthIndexFromSheet(sheetName) {
   return num ? Number(num[1]) - 1 : null;
 }
 
-// Período fiscal de una hoja mensual: la hoja "OCTUBRE 2026" es la del IVA de
-// septiembre 2026 (se presenta en octubre). Devuelve "AAAA-MM" o null.
-export function periodoFiscalDeHoja(year, sheetName, desfase = -1) {
+// Período fiscal de una hoja mensual: la hoja "OCTUBRE 2026" es la de los
+// documentos e IVA de octubre 2026, que vence en noviembre (día 7 + 2·VENC.).
+// Devuelve "AAAA-MM" o null.
+export function periodoFiscalDeHoja(year, sheetName, desfase = 0) {
   const idx = monthIndexFromSheet(sheetName);
   const yearInSheet = String(sheetName || '').match(/\b(20\d{2})\b/);
   const y = Number(yearInSheet ? yearInSheet[1] : year);

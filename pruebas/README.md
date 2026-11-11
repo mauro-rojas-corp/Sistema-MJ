@@ -40,6 +40,7 @@ original.
 | CAMBIO-3 | Sugerencias de los usuarios (lamparita junto al Buzón); el administrador las ve con el nombre | En prueba | No |
 | CAMBIO-4 | Ambientación por época (fechas especiales y estaciones), guardada por usuario | En prueba | No |
 | CAMBIO-5 | Traído de `Jorgeeayala/Sistema-MJ`: actualizar usuarios en «¿Quién sos?» y columnas parejas en la lista de clientes | En prueba | No |
+| CAMBIO-6 | Cada hoja vence el mes siguiente (hoja OCTUBRE → noviembre): ficha, días de retraso y Vencimientos IVA | En prueba | No |
 
 ### CAMBIO-1 · Ficha del cliente y Buzón
 
@@ -70,8 +71,10 @@ Qué revisar:
   **Registrar recepción y avisar**. En la planilla deben quedar `✓` (o
   `✓ resumen`), la observación y la fecha del día.
 - Se registra aunque el cliente no tenga Encargado (sin aviso).
-- Retraso de la documentación (ficha): los papeles deben llegar hasta el
-  día del vencimiento (VENC. 0 → 7/11; el 8/11 ya es 1 día). Si todavía no
+- Retraso de la documentación (ficha): cada hoja es el mes de los
+  documentos y vence el mes siguiente (hoja OCTUBRE → VENC. 0 el 7/11,
+  VENC. 3 el 13/11). Los papeles deben llegar hasta ese día; el 8/11 ya es
+  1 día de retraso para VENC. 0. Si todavía no
   llegaron, "Documentación pendiente: N días de retraso" (hasta hoy); una
   vez registrada la llegada (columna Fecha), "Llegó con N días de retraso"
   queda fijo en esa fecha. Si llegó a tiempo, no aparece nada. El aviso del
@@ -181,6 +184,21 @@ propios, que se trajeron tal cual (no los habíamos tocado después):
 - `src/styles.css`: estilos de esa pantalla.
 - `src/ui-executive/preview.css`: columnas de la lista de clientes con una
   sola plantilla (más parejas y livianas).
+
+### CAMBIO-6 · La hoja es el mes de los documentos
+
+Antes (como en el original) cada hoja era el mes en que vencía: la hoja
+OCTUBRE vencía en octubre y abría en Vencimientos IVA el período septiembre.
+Ahora la hoja es el mes de los documentos y vence el mes siguiente:
+- Hoja OCTUBRE 2026 → período fiscal octubre 2026 → VENC. 0 el 7/11,
+  VENC. 3 el 13/11 … VENC. 9 el 25/11.
+- Ficha: chip VENC., días de retraso y la llegada (cuenta desde el 1/11).
+- Vencimientos IVA abre el período de la hoja («Octubre 2026 · Vence en
+  noviembre 2026»); sin hoja elegida abre el mes anterior al actual.
+- Las liquidaciones se guardan por período, así que no se mueve ningún dato.
+
+Archivos: `src/iva/ivaCore.js` (`periodoFiscalDeHoja`), `src/iva/IvaModule.jsx`,
+`src/screens/ClientDetail.jsx` y `src/guia/pasosGuia.jsx` (texto).
 
 ## Las tres piezas separadas
 

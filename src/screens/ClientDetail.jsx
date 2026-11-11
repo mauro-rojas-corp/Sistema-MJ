@@ -202,7 +202,8 @@ export default function ClientDetail({
   const rucText = rucColumn ? String(values[rucColumn] ?? '').trim() : '';
 
   // Vencimiento como en Vencimientos IVA: VENC. = último dígito del RUC (sin
-  // DV), vence el día 7 + 2·VENC. del mes de la hoja, con el color de ese
+  // DV), vence el día 7 + 2·VENC. del mes siguiente al de la hoja (hoja
+  // octubre → noviembre), con el color de ese
   // VENC. Sin RUC usable, se toma el día de la columna Vencimiento.
   const [ivaConfig, setIvaConfig] = useState(() => normalizeConfig(null));
   useEffect(() => {
@@ -225,7 +226,8 @@ export default function ClientDetail({
       const mesIdx = monthIndexFromSheet(month);
       const anioHoja = String(month || '').match(/\b(20\d{2})\b/);
       const anio = Number(anioHoja ? anioHoja[1] : year);
-      if (dia >= 1 && dia <= 31 && mesIdx !== null && anio) fecha = new Date(anio, mesIdx, dia);
+      // Vence el mes siguiente al de la hoja (hoja octubre → noviembre).
+      if (dia >= 1 && dia <= 31 && mesIdx !== null && anio) fecha = new Date(anio, mesIdx + 1, dia);
     }
     const color = digito !== null ? colorFor(ivaConfig, digito) : null;
     return { digito, fecha, color };
