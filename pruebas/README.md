@@ -41,7 +41,7 @@ original.
 | CAMBIO-4 | Ambientación por época (fechas especiales y estaciones), guardada por usuario | En prueba | No |
 | CAMBIO-5 | Traído de `Jorgeeayala/Sistema-MJ`: actualizar usuarios en «¿Quién sos?» y columnas parejas en la lista de clientes | En prueba | No |
 | CAMBIO-6 | Cada hoja vence el mes siguiente (hoja OCTUBRE → noviembre): ficha, días de retraso y Vencimientos IVA | En prueba | No |
-| CAMBIO-7 | Extensión 2.10: flujo del Formulario 120 (sesión por cliente, cierre de sesión confiable, ventanas como las abre Marangatu, completar al aparecer el formulario) | En prueba | No |
+| CAMBIO-7 | Extensión 2.11: flujo del Formulario 120 (sesión por cliente, cierre de sesión confiable, ventanas como las abre Marangatu, completar al aparecer el formulario) | En prueba | No |
 
 ### CAMBIO-1 · Ficha del cliente y Buzón
 
@@ -224,6 +224,12 @@ Qué se corrigió:
   marcos de Marangatu, elige 211 · Mensual · año · mes y espera a que aparezca
   el formulario (después de «Abrir declaración») para completarlo.
 
+- **2.11:** «Salir» al primer intento (la respuesta del clic se perdía con
+  el cambio de página) y el botón «Cerrar» de la declaración funciona (la
+  ventana la abre la propia página de Marangatu; ventanas emergentes
+  permitidas sólo para marangatu.set.gov.py).
+
+Simulador: `pruebas/extension-sim/flujo-iva.mjs` (ver Extension/README.md).
 Probado con un Marangatu simulado (acceso, menú del usuario con «Cerrar
 sesión» escondido, «Presentar Declaración» en ventana nueva o en la misma,
 formulario en la misma pantalla o en otra ventana, ventana sin menú): cliente

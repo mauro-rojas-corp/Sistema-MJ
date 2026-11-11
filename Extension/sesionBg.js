@@ -193,27 +193,74 @@ async function pestanaConSesion(tabId) {
 // Devuelve true si la pestaña quedó en la pantalla de acceso.
 const SALIR_URL = 'https://marangatu.set.gov.py/eset/logout';
 
+// Navega la pestaña y espera a que esa navegación termine de cargar (no la
+// página anterior: se espera a que empiece a cargar y después a que termine).
+function navegarYEsperar(tabId, url, ms = 20000) {
+  return new Promise((resolve) => {
+    let listo = false;
+    let empezo = false;
+    const terminar = (v) => {
+      if (listo) return;
+      listo = true;
+      clearTimeout(limite);
+      chrome.tabs.onUpdated.removeListener(oyente);
+      resolve(v);
+    };
+    const oyente = (id, info) => {
+      if (id !== tabId) return;
+      if (info.status === 'loading') empezo = true;
+      else if (info.status === 'complete' && empezo) terminar(true);
+    };
+    const limite = setTimeout(() => terminar(false), ms);
+    chrome.tabs.onUpdated.addListener(oyente);
+    chrome.tabs.update(tabId, { url }).catch(() => terminar(false));
+  });
+}
+
 async function cerrarSesionMarangatu(tabId) {
-  try { await chrome.tabs.update(tabId, { url: INICIO_URL }); } catch { return false; }
-  await esperarCarga(tabId);
-  if (await esperarPaginaLogin(tabId, 1500)) return true; // no había sesión
+  if (!(await navegarYEsperar(tabId, INICIO_URL))) return false;
+  if (await esperarPaginaLogin(tabId, 1200)) return true; // no había sesión
 
-  let clic = null;
-  try { clic = await chrome.scripting.executeScript({ target: { tabId }, func: clicEnSalir }); } catch { clic = null; }
-  if (clic && clic[0] && clic[0].result && (await esperarPaginaLogin(tabId, 12000))) return true;
+  // Clic en «Salir». La página cambia enseguida, así que el resultado se
+  // confirma viendo aparecer el acceso (no esperando la respuesta del clic).
+  let encontrado = false;
+  try {
+    const r = await chrome.scripting.executeScript({ target: { tabId }, func: clicEnSalir });
+    encontrado = !!(r && r[0] && r[0].result);
+  } catch { encontrado = true; /* la página ya estaba cambiando */ }
+  if (encontrado) {
+    if (await esperarPaginaLogin(tabId, 6000)) return true;
+    // ¿Quedó una confirmación («¿Desea salir?») en pantalla? Se acepta.
+    try { await chrome.scripting.executeScript({ target: { tabId }, func: confirmarSalida }); } catch { /* ya cambió */ }
+    if (await esperarPaginaLogin(tabId, 10000)) return true;
+  }
 
-  try { await chrome.tabs.update(tabId, { url: SALIR_URL }); } catch { return false; }
+  // Respaldo: la dirección de «Salir».
+  if (!(await navegarYEsperar(tabId, SALIR_URL))) return false;
   return esperarPaginaLogin(tabId, 12000);
 }
 
-// Inyectada en el menú principal: clic en «Salir» (aunque el menú esté
-// cerrado, el enlace existe). Devuelve si lo encontró.
-function clicEnSalir() {
-  const link = document.querySelector('a.dropdown-item[href$="/eset/logout"], a[href$="/eset/logout"]')
+// Inyectada en el menú principal: espera a que aparezca «Salir» (el menú se
+// dibuja después de cargar) y lo pulsa un instante DESPUÉS de responder, para
+// que la respuesta no se pierda con el cambio de página.
+async function clicEnSalir() {
+  const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
+  const buscar = () => document.querySelector('a.dropdown-item[href$="/eset/logout"], a[href$="/eset/logout"]')
     || [...document.querySelectorAll('a.dropdown-item, a')].find((a) => /^\s*salir\s*$/i.test(a.textContent || ''));
+  let link = buscar();
+  for (let i = 0; !link && i < 40; i += 1) { await esperar(200); link = buscar(); }
   if (!link) return false;
-  link.click();
+  setTimeout(() => link.click(), 50);
   return true;
+}
+
+function confirmarSalida() {
+  const visible = (e) => !!(e.offsetParent || (e.getClientRects && e.getClientRects().length));
+  const b = [...document.querySelectorAll('.modal button, .modal a.btn, [role="dialog"] button')]
+    .filter(visible)
+    .find((x) => /^(s[ií]|aceptar|confirmar|ok|salir)$/i.test((x.textContent || '').replace(/\s+/g, ' ').trim()));
+  if (b) setTimeout(() => b.click(), 50);
+  return !!b;
 }
 
 // Cierra las demás pestañas de Marangatu: con la sesión cerrada quedaron con

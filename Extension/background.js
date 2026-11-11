@@ -136,30 +136,62 @@ function referenciaPeriodo(p) {
 }
 
 // Espera a que la pestaña salga del login y, en una página con el menú,
-// entra a «Presentar Declaración» (enlace recibirDDJJContribuyente.do, cuyo
-// token _cyp es de la sesión: se toma del propio enlace). Respeta cómo lo abre
-// Marangatu: si el enlace abre otra ventana se abre otra pestaña (hija de la
-// de trabajo); si no, en la misma. Se rinde a los 3 minutos o cuando ya entró.
-// No completa ni presenta nada (eso lo hace ivaContent.js en el formulario).
+// entra a «Presentar Declaración» haciendo clic en su enlace DENTRO de la
+// página, como una persona: así Marangatu abre su ventana como siempre (en la
+// misma o en una nueva, con su «ventana que la abrió»), y los botones de esa
+// ventana que dependen de eso («Cerrar», volver) funcionan. Para que Chrome
+// no bloquee esa ventana, la extensión permite las ventanas emergentes sólo
+// en marangatu.set.gov.py. Si aun así no aparece, se abre como respaldo.
+// Se rinde a los 3 minutos o cuando ya entró. No completa ni presenta nada
+// (eso lo hace ivaContent.js en el formulario).
 const PRESENTAR_TIMEOUT_MS = 3 * 60 * 1000;
+
+function permitirVentanasMarangatu() {
+  return new Promise((resolve) => {
+    try {
+      chrome.contentSettings.popups.set(
+        { primaryPattern: 'https://' + MARANGATU_HOST + '/*', setting: 'allow' },
+        () => { void chrome.runtime.lastError; resolve(); }
+      );
+    } catch { resolve(); }
+  });
+}
+chrome.runtime.onInstalled.addListener(() => { permitirVentanasMarangatu(); });
+chrome.runtime.onStartup.addListener(() => { permitirVentanasMarangatu(); });
+
+// ¿Se abrió una pestaña nueva desde tabId en los próximos ms?
+function esperarPestanaHija(tabId, ms) {
+  return new Promise((resolve) => {
+    const oyente = (tab) => { if (tab.openerTabId === tabId) { fin(tab); } };
+    const fin = (v) => { clearTimeout(t); chrome.tabs.onCreated.removeListener(oyente); resolve(v || null); };
+    const t = setTimeout(() => fin(null), ms);
+    chrome.tabs.onCreated.addListener(oyente);
+  });
+}
 
 function irAPresentarCuandoEntre(tabId) {
   const limite = Date.now() + PRESENTAR_TIMEOUT_MS;
   let hecho = false;
-  const intentar = (tab) => {
+  const intentar = async (tab) => {
     if (hecho) return;
     if (Date.now() > limite) { chrome.tabs.onUpdated.removeListener(onUpdated); return; }
     const url = String((tab && tab.url) || '');
     if (!esUrlMarangatu(url) || url.includes('/login')) return;
     if (url.includes('recibirDDJJContribuyente.do')) { hecho = true; chrome.tabs.onUpdated.removeListener(onUpdated); return; }
-    chrome.scripting.executeScript({ target: { tabId }, func: buscarPresentarDeclaracion }, (res) => {
-      const enlace = !chrome.runtime.lastError && res && res[0] && res[0].result;
-      if (!enlace || hecho) return;
-      hecho = true;
-      chrome.tabs.onUpdated.removeListener(onUpdated);
-      if (enlace.nueva) chrome.tabs.create({ url: enlace.href, openerTabId: tabId, active: true }).catch(() => {});
-      else chrome.tabs.update(tabId, { url: enlace.href }).catch(() => {});
-    });
+    let res = null;
+    try { res = await chrome.scripting.executeScript({ target: { tabId }, func: buscarPresentarDeclaracion }); } catch { res = null; }
+    const enlace = res && res[0] && res[0].result;
+    if (!enlace || hecho) return;
+    hecho = true;
+    chrome.tabs.onUpdated.removeListener(onUpdated);
+    if (enlace.nueva) await permitirVentanasMarangatu();
+    const hija = enlace.nueva ? esperarPestanaHija(tabId, 4000) : null;
+    try { await chrome.scripting.executeScript({ target: { tabId }, func: clicPresentarDeclaracion }); } catch { /* respaldo abajo */ }
+    if (hija && !(await hija)) {
+      // Chrome bloqueó la ventana: se abre la pestaña igual (sin «ventana que
+      // la abrió»; Marangatu sigue funcionando, salvo su botón «Cerrar»).
+      chrome.tabs.create({ url: enlace.href, openerTabId: tabId, active: true }).catch(() => {});
+    }
   };
   const onUpdated = (id, info, tab) => {
     if (id !== tabId || info.status !== 'complete') return;
@@ -170,17 +202,27 @@ function irAPresentarCuandoEntre(tabId) {
   chrome.tabs.get(tabId).then((tab) => { if (tab && tab.status === 'complete') intentar(tab); }).catch(() => {});
 }
 
-// Inyectada en Marangatu: devuelve el enlace de «Presentar Declaración» y si
+// Inyectadas en Marangatu. buscar: el enlace de «Presentar Declaración» y si
 // Marangatu lo abre en otra ventana (target, o window.open en su onclick).
+// clic: lo pulsa como una persona.
 function buscarPresentarDeclaracion() {
   const link = document.querySelector('a[href*="recibirDDJJContribuyente.do"]')
     || [...document.querySelectorAll('a')].find((a) =>
       /presentar declaraci/i.test(a.title || a.getAttribute('data-tooltip') || a.textContent || ''));
-  if (!link || !link.href || /^javascript:/i.test(link.getAttribute('href') || '')) return null;
+  if (!link || !link.href) return null;
   const destino = (link.getAttribute('target') || '').toLowerCase();
   const nueva = (destino && destino !== '_self' && destino !== '_top' && destino !== '_parent') ||
     /window\.open/i.test(link.getAttribute('onclick') || '');
   return { href: link.href, nueva: !!nueva };
+}
+
+function clicPresentarDeclaracion() {
+  const link = document.querySelector('a[href*="recibirDDJJContribuyente.do"]')
+    || [...document.querySelectorAll('a')].find((a) =>
+      /presentar declaraci/i.test(a.title || a.getAttribute('data-tooltip') || a.textContent || ''));
+  if (!link) return false;
+  link.click();
+  return true;
 }
 
 // Sólo números: casilla (1 a 4 dígitos) e importe entero en guaraníes.
@@ -227,8 +269,7 @@ function abrirLogin(user, pass, despues, opciones = {}) {
     if (r.aviso) await publicarAviso(r.aviso);
     if (r.mismoCliente) {
       // Misma sesión del cliente: se vuelve al inicio para arrancar de ahí.
-      try { await chrome.tabs.update(tabId, { url: INICIO_URL }); } catch { /* sigue igual */ }
-      await esperarCarga(tabId);
+      await navegarYEsperar(tabId, INICIO_URL);
       await publicarAviso('Se reutiliza la sesión abierta de este cliente en Marangatu.');
     }
     if (despues) await despues(tabId, r);
@@ -247,17 +288,6 @@ function abrirLogin(user, pass, despues, opciones = {}) {
     }
     return { ok: true, tabId, sesionActiva: !!r.sesionActiva, mismoCliente: !!r.mismoCliente };
   });
-}
-
-// Espera a que la pestaña termine de cargar (máx. 15 s).
-async function esperarCarga(tabId, ms = 15000) {
-  await dormir(300);
-  const fin = Date.now() + ms;
-  while (Date.now() < fin) {
-    try { const t = await chrome.tabs.get(tabId); if (t.status === 'complete') return true; } catch { return false; }
-    await dormir(250);
-  }
-  return false;
 }
 
 // Chrome informa tanto el origen como la URL de la página remitente. Ambos

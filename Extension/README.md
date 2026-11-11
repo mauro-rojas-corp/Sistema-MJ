@@ -121,10 +121,17 @@ mientras está activado.
   (sólo el RUC, nunca la clave). Si se pide el mismo cliente, reutiliza la
   sesión; si es otro (o una sesión iniciada a mano), la cierra y cierra las
   demás pestañas de Marangatu que quedaron de esa sesión.
+- **Ventanas de Marangatu (v2.11):** «Presentar Declaración» se abre con un
+  clic dentro de la página (como una persona), así Marangatu abre su ventana
+  con su «ventana de origen» y su botón «Cerrar» funciona. Para que Chrome no
+  bloquee esa ventana, la extensión permite las ventanas emergentes sólo en
+  `marangatu.set.gov.py` (permiso `contentSettings`).
 - **Cerrar sesión (v2.10, confirmado en el portal real):** la pestaña de
-  trabajo va al menú principal `https://marangatu.set.gov.py/eset/` y se hace
-  clic en «Salir» (`<a class="dropdown-item" href="/eset/logout">`); si no
-  aparece el acceso, se va directo a `/eset/logout`. Después se cierran todas
+  trabajo va al menú principal `https://marangatu.set.gov.py/eset/` (espera a
+  que termine de cargar y a que se dibuje el menú) y se hace clic en «Salir»
+  (`<a class="dropdown-item" href="/eset/logout">`); el resultado se confirma
+  viendo la pantalla de acceso (v2.11: antes se perdía con el cambio de página
+  y la primera vez parecía fallar). Respaldo: `/eset/logout`. Después se cierran todas
   las demás ventanas de Marangatu. Lo mismo hacen el botón «Cerrar sesión» del
   panel y el pedido de la app (`APP_CERRAR_SESION`).
 - **Mensajes a las pestañas:** cada content script responde sólo a sus
@@ -270,3 +277,12 @@ automático (la extensión no puede actuar sobre otros programas).
 > navegadores Chromium. Sin la extensión, Control Clientes abre Marangatu para
 > realizar el acceso manual, y **Copiar lista** deja las casillas en el
 > portapapeles para cargarlas a mano.
+
+## Simulador del flujo (pruebas)
+
+`pruebas/extension-sim/flujo-iva.mjs` carga esta extensión en Chromium contra
+un Marangatu falso (acceso, menú con «Salir» que se dibuja tarde, «Presentar
+Declaración», selección de obligación, formulario y su botón «Cerrar», con el
+bloqueador de ventanas emergentes activo) y recorre: cliente nuevo, mismo
+cliente, otro cliente desde una ventana sin menú, cierre desde la app y sesión
+iniciada a mano. Variantes `NUEVA=0|1` y `FORM_VENTANA=0|1`.
