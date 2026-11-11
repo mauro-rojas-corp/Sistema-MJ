@@ -300,7 +300,12 @@ chrome.runtime.onConnect.addListener((port) => {
     return;
   }
   puertosPanel.add(port);
-  port.onDisconnect.addListener(() => puertosPanel.delete(port));
+  // Se cierra solo cuando la página cambia o pasa a la caché de atrás/adelante:
+  // leer lastError evita el aviso "Unchecked runtime.lastError" en Chrome.
+  port.onDisconnect.addListener(() => {
+    void chrome.runtime.lastError;
+    puertosPanel.delete(port);
+  });
   estadoActual().then((estado) => {
     try { port.postMessage({ tipo: 'estado', estado }); } catch { puertosPanel.delete(port); }
   });

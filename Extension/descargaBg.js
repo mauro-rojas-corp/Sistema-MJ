@@ -472,7 +472,11 @@ chrome.runtime.onConnectExternal.addListener((port) => {
     return;
   }
   puertosApp.add(port);
-  port.onDisconnect.addListener(() => puertosApp.delete(port));
+  // Ídem: la app puede cerrar el canal al cambiar de página (sin error real).
+  port.onDisconnect.addListener(() => {
+    void chrome.runtime.lastError;
+    puertosApp.delete(port);
+  });
   estadoActual().then((estado) => {
     try { port.postMessage({ tipo: 'estado', estado }); } catch { puertosApp.delete(port); }
   });
