@@ -592,6 +592,16 @@ export const api = {
     return response;
   },
 
+  // Preferencias del usuario que lo siguen en cualquier dispositivo
+  // (AppsScript-Preferencias.gs): ambientación por época y animación.
+  preferencias: {
+    obtener: async () => {
+      const data = await request({ action: 'preferenciasObtener' });
+      return { ambientacion: data.ambientacion || 'ninguna', animacion: data.animacion !== false };
+    },
+    guardar: (cambios) => request({ action: 'preferenciasGuardar', ...cambios }),
+  },
+
   // Sugerencias para mejorar el sistema (AppsScript-Sugerencias.gs). Cada
   // usuario ve las suyas; ADMINISTRADOR y SUPERUSUARIO ven todas.
   sugerencias: {

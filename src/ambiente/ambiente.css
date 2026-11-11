@@ -1,0 +1,351 @@
+/* ── Ambientación por época ───────────────────────────────────────────
+   Se activa con data-ambiente en .real-exec-app. Sólo cambia acentos
+   (--rx-brand), el fondo del panel principal y unos adornos en la barra.
+   Los colores de vencimiento y de estado no se tocan. */
+
+.real-exec-app[data-ambiente] .real-exec-navbar {
+  position: sticky;
+}
+
+/* Saludo a la izquierda de la barra */
+.rx-amb-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: auto;
+  min-width: 0;
+  padding: 6px 12px 6px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  font-size: var(--rx-fs-sm, 14px);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.rx-amb-pill-emoji {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.rx-amb-pill-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 760px) {
+  .rx-amb-pill {
+    padding: 4px;
+    border: 0;
+    background: none;
+  }
+  .rx-amb-pill-text {
+    display: none;
+  }
+}
+
+/* Adorno al pie de la barra (guirnalda, franja tricolor…) */
+.rx-amb-strip {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 4px;
+  pointer-events: none;
+  background: var(--amb-strip, transparent);
+}
+
+/* ── Paleta de cada ambientación ─────────────────────────────────────── */
+.real-exec-app[data-ambiente="navidad"] {
+  --rx-brand: #1d6b46;
+  --rx-brand-dark: #14532f;
+  --rx-brand-soft: #e5f2eb;
+  --amb-hero-1: #1d3b2c;
+  --amb-hero-2: #8c2128;
+  --amb-glow: rgba(212, 167, 44, 0.42);
+}
+.real-exec-app[data-ambiente="navidad"] .rx-amb-strip {
+  height: 9px;
+  bottom: -5px;
+  /* Luces de colores sobre un cable */
+  background:
+    radial-gradient(circle at 9px 6px, #e5484d 0 3px, transparent 3.6px) 0 0 / 54px 9px repeat-x,
+    radial-gradient(circle at 27px 6px, #3fbf73 0 3px, transparent 3.6px) 0 0 / 54px 9px repeat-x,
+    radial-gradient(circle at 45px 6px, #f2c94c 0 3px, transparent 3.6px) 0 0 / 54px 9px repeat-x,
+    linear-gradient(#2f3a33, #2f3a33) 0 1px / 100% 1px no-repeat;
+  filter: drop-shadow(0 0 3px rgba(255, 220, 140, 0.55));
+}
+
+.real-exec-app[data-ambiente="anio-nuevo"] {
+  --rx-brand: #81620f;
+  --rx-brand-dark: #634a09;
+  --rx-brand-soft: #faf2dc;
+  --amb-hero-1: #3a3020;
+  --amb-hero-2: #8a6a12;
+  --amb-glow: rgba(240, 210, 120, 0.45);
+  --amb-strip: linear-gradient(90deg, #8a6a12, #f2d27a, #c0c4cc, #f2d27a, #8a6a12);
+}
+
+.real-exec-app[data-ambiente="semana-santa"] {
+  --rx-brand: #6a4c9c;
+  --rx-brand-dark: #523a7c;
+  --rx-brand-soft: #f0ebf8;
+  --amb-hero-1: #3a2f57;
+  --amb-hero-2: #6a4c9c;
+  --amb-glow: rgba(214, 196, 240, 0.4);
+  --amb-strip: linear-gradient(90deg, #6a4c9c, #e9e2f6, #c6b2e6, #e9e2f6, #6a4c9c);
+}
+
+.real-exec-app[data-ambiente="independencia"] {
+  --rx-brand: #0038a8;
+  --rx-brand-dark: #002a7f;
+  --rx-brand-soft: #e5ecfa;
+  --amb-hero-1: #0b2f75;
+  --amb-hero-2: #8f1d16;
+  --amb-glow: rgba(255, 255, 255, 0.28);
+  --amb-strip: linear-gradient(#d52b1e 0 33%, #ffffff 33% 66%, #0038a8 66%);
+}
+.real-exec-app[data-ambiente="independencia"] .rx-amb-strip {
+  height: 6px;
+}
+
+.real-exec-app[data-ambiente="san-juan"] {
+  --rx-brand: #b0440e;
+  --rx-brand-dark: #8a340a;
+  --rx-brand-soft: #fdeee3;
+  --amb-hero-1: #4f2210;
+  --amb-hero-2: #b0440e;
+  --amb-glow: rgba(255, 160, 60, 0.45);
+  --amb-strip: linear-gradient(90deg, #8a340a, #ff8a1f, #ffd36b, #ff8a1f, #8a340a);
+}
+
+.real-exec-app[data-ambiente="verano"] {
+  --rx-brand: #0d7480;
+  --rx-brand-dark: #095862;
+  --rx-brand-soft: #e1f3f5;
+  --amb-hero-1: #0f5c66;
+  --amb-hero-2: #b77c0c;
+  --amb-glow: rgba(255, 214, 92, 0.5);
+  --amb-strip: linear-gradient(90deg, #0d7480, #3fb6c2, #ffd25c, #ffb800);
+}
+
+.real-exec-app[data-ambiente="otono"] {
+  --rx-brand: #93491a;
+  --rx-brand-dark: #733812;
+  --rx-brand-soft: #f8ece1;
+  --amb-hero-1: #4a2a14;
+  --amb-hero-2: #93491a;
+  --amb-glow: rgba(230, 140, 60, 0.42);
+  --amb-strip: linear-gradient(90deg, #733812, #c8641f, #e3a33a, #8f5a24);
+}
+
+.real-exec-app[data-ambiente="invierno"] {
+  --rx-brand: #2b5f8f;
+  --rx-brand-dark: #1f4a71;
+  --rx-brand-soft: #e6eff8;
+  --amb-hero-1: #24415f;
+  --amb-hero-2: #4f7fab;
+  --amb-glow: rgba(200, 228, 255, 0.45);
+  --amb-strip: linear-gradient(90deg, #2b5f8f, #bfe0ff, #ffffff, #bfe0ff, #2b5f8f);
+}
+
+.real-exec-app[data-ambiente="primavera"] {
+  --rx-brand: #a8366a;
+  --rx-brand-dark: #852853;
+  --rx-brand-soft: #fbe9f1;
+  --amb-hero-1: #4b2a48;
+  --amb-hero-2: #2f7a52;
+  --amb-glow: rgba(255, 170, 205, 0.45);
+  --amb-strip: linear-gradient(90deg, #a8366a, #f6a5c8, #ffe27a, #7cc98f, #a8366a);
+}
+
+/* Tema oscuro: acentos más claros para que se lean sobre fondo oscuro. */
+[data-theme="dark"] .real-exec-app[data-ambiente="navidad"] { --rx-brand: #6cc59a; --rx-brand-dark: #a4dcbf; --rx-brand-soft: rgba(29, 107, 70, 0.3); }
+[data-theme="dark"] .real-exec-app[data-ambiente="anio-nuevo"] { --rx-brand: #e2c06a; --rx-brand-dark: #f0d898; --rx-brand-soft: rgba(138, 106, 18, 0.3); }
+[data-theme="dark"] .real-exec-app[data-ambiente="semana-santa"] { --rx-brand: #b9a2e2; --rx-brand-dark: #d6c8f0; --rx-brand-soft: rgba(106, 76, 156, 0.32); }
+[data-theme="dark"] .real-exec-app[data-ambiente="independencia"] { --rx-brand: #7fa6f0; --rx-brand-dark: #b1c8f5; --rx-brand-soft: rgba(0, 56, 168, 0.32); }
+[data-theme="dark"] .real-exec-app[data-ambiente="san-juan"] { --rx-brand: #f39a5e; --rx-brand-dark: #f8bf95; --rx-brand-soft: rgba(176, 68, 14, 0.3); }
+[data-theme="dark"] .real-exec-app[data-ambiente="verano"] { --rx-brand: #5ac6d1; --rx-brand-dark: #95dde4; --rx-brand-soft: rgba(13, 116, 128, 0.3); }
+[data-theme="dark"] .real-exec-app[data-ambiente="otono"] { --rx-brand: #e3995f; --rx-brand-dark: #efbf96; --rx-brand-soft: rgba(147, 73, 26, 0.3); }
+[data-theme="dark"] .real-exec-app[data-ambiente="invierno"] { --rx-brand: #8fbbe3; --rx-brand-dark: #bcd6ef; --rx-brand-soft: rgba(43, 95, 143, 0.32); }
+[data-theme="dark"] .real-exec-app[data-ambiente="primavera"] { --rx-brand: #ee8fb9; --rx-brand-dark: #f5b9d4; --rx-brand-soft: rgba(168, 54, 106, 0.3); }
+
+/* Panel principal de Estadísticas con los colores de la época */
+.real-exec-app[data-ambiente] .real-exec-hero {
+  background:
+    radial-gradient(circle at 80% 30%, var(--amb-glow), transparent 28%),
+    linear-gradient(125deg, #1c1f23 0%, var(--amb-hero-1) 52%, var(--amb-hero-2) 100%);
+}
+
+/* ── Animación al ingresar ──────────────────────────────────────────── */
+.rx-amb-intro {
+  position: fixed;
+  inset: 0;
+  z-index: 1500;
+  overflow: hidden;
+  pointer-events: none;
+  animation: rx-amb-fin 7s linear forwards;
+}
+
+@keyframes rx-amb-fin {
+  0%, 82% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.rx-amb-p {
+  position: absolute;
+  top: -40px;
+  line-height: 1;
+  opacity: 0;
+  will-change: transform, opacity;
+  animation-name: rx-amb-cae;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+.rx-amb-p.is-simbolo {
+  color: #8fbfe0;
+  text-shadow: 0 0 2px rgba(40, 80, 120, 0.35);
+}
+
+[data-theme="dark"] .rx-amb-p.is-simbolo {
+  color: #e6f2fb;
+}
+
+.rx-amb-p.is-confeti {
+  width: 0.5em;
+  height: 0.8em;
+  border-radius: 2px;
+  background: var(--c);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.08);
+}
+
+.rx-amb-p.is-brasa {
+  top: auto;
+  bottom: -20px;
+  width: 0.4em;
+  height: 0.4em;
+  border-radius: 50%;
+  background: var(--c);
+  box-shadow: 0 0 8px 2px var(--c);
+  animation-name: rx-amb-sube;
+}
+
+.rx-amb-intro.is-flota .rx-amb-p {
+  top: auto;
+  bottom: -40px;
+  font-size: 24px !important;
+  animation-name: rx-amb-flota;
+}
+
+@keyframes rx-amb-cae {
+  0% { opacity: 0; transform: translate3d(0, 0, 0) rotate(var(--rot)); }
+  10% { opacity: 0.85; }
+  50% { transform: translate3d(var(--sway), 50vh, 0) rotate(calc(var(--rot) + 120deg)); }
+  85% { opacity: 0.75; }
+  100% { opacity: 0; transform: translate3d(calc(var(--sway) * -0.4), 92vh, 0) rotate(calc(var(--rot) + 240deg)); }
+}
+
+@keyframes rx-amb-sube {
+  0% { opacity: 0; transform: translate3d(0, 0, 0); }
+  15% { opacity: 0.9; }
+  100% { opacity: 0; transform: translate3d(var(--sway), -55vh, 0); }
+}
+
+@keyframes rx-amb-flota {
+  0% { opacity: 0; transform: translate3d(0, 0, 0); }
+  15% { opacity: 0.8; }
+  100% { opacity: 0; transform: translate3d(calc(var(--sway) * 3), -70vh, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rx-amb-intro {
+    display: none;
+  }
+}
+
+/* ── Configuración: elegir ambientación ─────────────────────────────── */
+.settings-amb-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: 6px;
+}
+
+.settings-amb-group {
+  margin: 12px 2px 6px;
+  color: var(--text-subtle);
+  font-size: calc(11px * var(--ui-font-scale, 1));
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.settings-amb-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 10px;
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-card);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: calc(13px * var(--ui-font-scale, 1));
+  font-weight: 600;
+  text-align: left;
+  transition: background-color 0.14s ease, border-color 0.14s ease, color 0.14s ease;
+}
+
+.settings-amb-option:hover {
+  background-color: var(--bg-card-hover);
+}
+
+.settings-amb-option.is-active {
+  background-color: var(--primary-light);
+  border-color: var(--primary-border);
+  color: var(--primary);
+}
+
+.settings-amb-emoji {
+  flex: 0 0 auto;
+  width: 20px;
+  font-size: 17px;
+  line-height: 1;
+  text-align: center;
+}
+
+.settings-amb-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.settings-amb-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  color: var(--text-muted);
+  font-size: calc(13px * var(--ui-font-scale, 1));
+  cursor: pointer;
+}
+
+.settings-amb-toggle input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--primary);
+}
+
+.settings-amb-error {
+  margin: 8px 2px 0;
+  padding: 8px 10px;
+  border: 1px solid var(--danger-border);
+  border-radius: var(--radius-sm);
+  background: var(--danger-light);
+  color: var(--danger);
+  font-size: calc(12px * var(--ui-font-scale, 1));
+}

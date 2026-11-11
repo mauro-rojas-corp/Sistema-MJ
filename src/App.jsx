@@ -25,6 +25,10 @@ import useAvisos from './hooks/useAvisos';
 import BuzonPanel from './components/BuzonPanel';
 import SugerenciasPanel from './components/SugerenciasPanel';
 import useSugerencias from './hooks/useSugerencias';
+import useAmbiente from './hooks/useAmbiente';
+import AmbienteIntro from './ambiente/AmbienteIntro';
+import './ambiente/ambiente.css';
+import { AMBIENTE_NINGUNA, resolverAmbiente } from './ambiente/ambientes';
 import PendingClientOpener from './components/PendingClientOpener';
 import GuidedTour from './components/GuidedTour';
 import { construirPasosGuia } from './guia/pasosGuia';
@@ -155,6 +159,52 @@ export default function App({
   const buzon = useAvisos(authenticated && !readOnlyPreview, `${user || ''}|${activeSessionToken}`);
   const initialContentReady = initialScreenReady && authReady;
   const isAdminUser = userRole === 'SUPERUSUARIO' || userRole === 'ADMINISTRADOR';
+  // Ambientación por época (Navidad, estaciones…): la elige cada usuario.
+  const ambienteSessionKey = `${user || ''}|${activeSessionToken}`;
+  const ambientePref = useAmbiente(
+    uiMode === 'executive' && authenticated && !readOnlyPreview,
+    user,
+    ambienteSessionKey
+  );
+  const ambienteActivo =
+    uiMode === 'executive' && authenticated && !readOnlyPreview ? resolverAmbiente(ambientePref.ambientacion) : null;
+  const [introAmbiente, setIntroAmbiente] = useState(null);
+  const ambienteActivoId = ambienteActivo?.id || '';
+  // La animación se ve una vez al ingresar (no al recargar la misma pestaña).
+  useEffect(() => {
+    if (!ambienteActivoId || !ambientePref.loaded || !ambientePref.animacion) return undefined;
+    let reducir = false;
+    try {
+      reducir = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    } catch {
+      reducir = false;
+    }
+    if (reducir) return undefined;
+    let hash = 5381;
+    for (const ch of ambienteSessionKey) hash = ((hash * 33) ^ ch.charCodeAt(0)) >>> 0;
+    const clave = `ctc:ambiente-intro:${hash.toString(36)}`;
+    try {
+      if (sessionStorage.getItem(clave)) return undefined;
+      sessionStorage.setItem(clave, '1');
+    } catch {
+      /* sin almacenamiento: se muestra igual */
+    }
+    const t = setTimeout(() => setIntroAmbiente(ambienteActivoId), 400);
+    return () => clearTimeout(t);
+  }, [ambienteActivoId, ambientePref.loaded, ambientePref.animacion, ambienteSessionKey]);
+  const cerrarIntroAmbiente = useCallback(() => setIntroAmbiente(null), []);
+  const guardarAmbiente = useCallback(
+    async (cambios) => {
+      await ambientePref.guardar(cambios);
+      // Al elegir una ambientación se muestra su animación como vista previa.
+      const elegida = cambios.ambientacion !== undefined ? resolverAmbiente(cambios.ambientacion) : null;
+      if (elegida && ambientePref.animacion !== false && cambios.ambientacion !== AMBIENTE_NINGUNA) {
+        setIntroAmbiente(null);
+        setTimeout(() => setIntroAmbiente(elegida.id), 50);
+      }
+    },
+    [ambientePref]
+  );
   const sugerencias = useSugerencias(
     authenticated && !readOnlyPreview,
     `${user || ''}|${activeSessionToken}`,
@@ -833,6 +883,23 @@ export default function App({
           {/* Sin marca: el logo y el lema no aportan a la operación diaria.
               La barra queda limpia con las acciones (período, actualizar,
               configuración, usuario). */}
+          {ambienteActivo && (
+            <>
+              <span className="rx-amb-strip" aria-hidden="true" />
+              <div
+                className="rx-amb-pill"
+                title={`Ambientación: ${ambienteActivo.nombre} (se cambia en Configuración)`}
+              >
+                <span className="rx-amb-pill-emoji" aria-hidden="true">
+                  {ambienteActivo.emoji}
+                </span>
+                <span className="rx-amb-pill-text">
+                  {ambienteActivo.saludo}
+                  {user ? `, ${String(user).split(' ')[0]}` : ''}!
+                </span>
+              </div>
+            </>
+          )}
 
           <div className="real-exec-navbar-actions">
             {syncStatus.status === 'syncing' && (
@@ -1125,7 +1192,13 @@ export default function App({
   // recargar. Ese estado se lee con un hook, por eso el render se delega
   // al componente <PeriodScreens> de más abajo.
   return (
-    <div className={`app-container ${uiMode === 'executive' ? 'real-exec-app' : ''}`}>
+    <div
+      className={`app-container ${uiMode === 'executive' ? 'real-exec-app' : ''}`}
+      data-ambiente={ambienteActivo?.id || undefined}
+    >
+      {introAmbiente && resolverAmbiente(introAmbiente) && (
+        <AmbienteIntro key={introAmbiente} ambiente={resolverAmbiente(introAmbiente)} onFin={cerrarIntroAmbiente} />
+      )}
       <AppSplashLoader
         logoSrc="/logo-mj.webp"
         ready={initialContentReady}
@@ -1274,6 +1347,11 @@ export default function App({
         onChangeUser={handleChangeUser}
         onThemeChange={setTheme}
         onFontScaleChange={setFontScale}
+        ambiente={
+          uiMode === 'executive' && authenticated && !readOnlyPreview
+            ? { ambientacion: ambientePref.ambientacion, animacion: ambientePref.animacion, guardar: guardarAmbiente }
+            : null
+        }
       />
       </Suspense>
       )}

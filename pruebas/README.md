@@ -38,6 +38,7 @@ original.
 | CAMBIO-1 | Ficha del cliente rediseñada (documentación recibida + aviso al Encargado) y Buzón con campana | En prueba | No |
 | CAMBIO-2 | Guía interactiva del sistema (botón «?» y automática la primera vez) | En prueba | No |
 | CAMBIO-3 | Sugerencias de los usuarios (lamparita junto al Buzón); el administrador las ve con el nombre | En prueba | No |
+| CAMBIO-4 | Ambientación por época (fechas especiales y estaciones), guardada por usuario | En prueba | No |
 
 ### CAMBIO-1 · Ficha del cliente y Buzón
 
@@ -128,6 +129,39 @@ Qué revisar:
   resuelta** y **Reabrir**. Al abrir Recibidas, las nuevas pasan a vistas.
 - En la planilla, hoja `Sugerencias`: una fila por sugerencia con usuario,
   rol, tipo, sección, texto, estado y quién la revisó.
+
+### CAMBIO-4 · Ambientación por época
+
+Archivos: `AppsScript-Preferencias.gs` (nuevo), `AppsScript-Avisos.gs` (deriva
+las acciones `preferencias*`), `src/ambiente/ambientes.js`,
+`src/ambiente/AmbienteIntro.jsx`, `src/ambiente/ambiente.css` y
+`src/hooks/useAmbiente.js` (nuevos), `src/App.jsx`,
+`src/components/SettingsDialog.jsx`, `src/api.js`, `src/guia/pasosGuia.jsx`
+y `tools/smoke/server.mjs` (con `AMBIENTE=navidad` arranca con esa).
+
+Para probarlo con tu Apps Script:
+1. **+ → Secuencia de comandos** llamada `Preferencias` y pegá
+   `AppsScript-Preferencias.gs`.
+2. En el archivo `Avisos`, reemplazá todo por el `AppsScript-Avisos.gs` nuevo.
+3. **Implementar → Administrar implementaciones → editar → Nueva versión**.
+   La hoja `Preferencias` se crea sola (una fila por usuario).
+
+Qué revisar:
+- Configuración → **Ambientación**: Ninguna (por defecto), Automática, y a
+  mano: Navidad (1–26/12), Año Nuevo (27/12–2/1), Semana Santa (Ramos a
+  Pascua, se calcula cada año), Independencia (10–15/5), San Juan (16–30/6),
+  Verano (21/12–20/3), Otoño (21/3–20/6), Invierno (21/6–20/9) y Primavera
+  (21/9–20/12). En Automática las fechas especiales ganan a la estación.
+- Cambia los acentos (botones, menú), el panel de Estadísticas, un adorno al
+  pie de la barra (guirnalda de luces en Navidad, franja tricolor en
+  Independencia…) y un saludo «¡Felices fiestas, Nombre!» (en el celular,
+  sólo el ícono). Los colores de vencimiento y los estados no cambian.
+- Animación al ingresar: pocos copos, hojas o confeti durante unos 6
+  segundos, sin bloquear la pantalla. Una vez por ingreso (no al recargar),
+  se puede apagar y no aparece si el dispositivo pide reducir el movimiento.
+  Al elegir una ambientación se muestra como vista previa.
+- Se guarda en el usuario: la misma elección en la PC y en el celular; cada
+  usuario tiene la suya.
 
 ## Las tres piezas separadas
 

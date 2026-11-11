@@ -9,6 +9,7 @@ import {
   Moon,
   RefreshCw,
   ShieldCheck,
+  Sparkles,
   Sun,
   Type,
   UserCheck,
@@ -17,6 +18,88 @@ import {
   X,
 } from 'lucide-react';
 import { api } from '../api';
+import {
+  AMBIENTES,
+  AMBIENTE_AUTOMATICA,
+  AMBIENTE_NINGUNA,
+  ambienteDeFecha,
+} from '../ambiente/ambientes';
+
+// Ambientación por época: la elección se guarda en el usuario (Apps Script).
+function AmbientacionSection({ ambiente }) {
+  const [error, setError] = useState('');
+  const hoy = ambienteDeFecha();
+  const elegir = (cambios) => {
+    setError('');
+    ambiente.guardar(cambios).catch((err) =>
+      setError(err?.message || 'No se pudo guardar. Revisá la conexión e intentá de nuevo.')
+    );
+  };
+  const opcion = (id, emoji, nombre, detalle) => (
+    <button
+      key={id}
+      type="button"
+      className={`settings-amb-option ${ambiente.ambientacion === id ? 'is-active' : ''}`}
+      aria-pressed={ambiente.ambientacion === id}
+      title={detalle}
+      onClick={() => elegir({ ambientacion: id })}
+    >
+      <span className="settings-amb-emoji" aria-hidden="true">
+        {emoji}
+      </span>
+      <span className="settings-amb-name">{nombre}</span>
+    </button>
+  );
+  return (
+    <div className="settings-subsection settings-amb">
+      <div className="settings-subsection-header">
+        <span className="settings-subsection-title">
+          <Sparkles size={15} />
+          Ambientación
+        </span>
+      </div>
+      <div className="settings-amb-grid" role="group" aria-label="Ambientación por época del año">
+        {opcion(AMBIENTE_NINGUNA, '—', 'Ninguna', 'Diseño de siempre')}
+        {opcion(
+          AMBIENTE_AUTOMATICA,
+          hoy ? hoy.emoji : '📅',
+          'Automática',
+          'Cambia sola según la fecha: fechas especiales y estaciones'
+        )}
+      </div>
+      {ambiente.ambientacion === AMBIENTE_AUTOMATICA && hoy && (
+        <p className="settings-note">
+          Hoy corresponde: <strong>{hoy.nombre}</strong> {hoy.emoji}
+        </p>
+      )}
+      <div className="settings-amb-group">Fechas especiales</div>
+      <div className="settings-amb-grid" role="group" aria-label="Fechas especiales">
+        {AMBIENTES.filter((a) => a.grupo === 'fecha').map((a) => opcion(a.id, a.emoji, a.nombre, a.periodo))}
+      </div>
+      <div className="settings-amb-group">Estaciones del año</div>
+      <div className="settings-amb-grid" role="group" aria-label="Estaciones del año">
+        {AMBIENTES.filter((a) => a.grupo === 'estacion').map((a) => opcion(a.id, a.emoji, a.nombre, a.periodo))}
+      </div>
+      <label className="settings-amb-toggle">
+        <input
+          type="checkbox"
+          checked={ambiente.animacion}
+          onChange={(e) => elegir({ animacion: e.target.checked })}
+        />
+        Animación corta al ingresar (nieve, hojas, confeti…)
+      </label>
+      {error && (
+        <p className="settings-amb-error" role="alert">
+          {error}
+        </p>
+      )}
+      <p className="settings-note">
+        Se guarda en tu usuario: la ves igual en cualquier dispositivo. Sólo cambia la decoración; los
+        colores de vencimiento y los estados no cambian.
+      </p>
+    </div>
+  );
+}
 
 function cleanPin(value) {
   return value.replace(/\D/g, '').slice(0, 4);
@@ -37,6 +120,7 @@ export default function SettingsDialog({
   onChangeUser,
   onThemeChange,
   onFontScaleChange,
+  ambiente = null,
 }) {
   const [view, setView] = useState(() => (mustChangePin ? 'pin' : 'main'));
   const [currentPin, setCurrentPin] = useState('');
@@ -315,6 +399,8 @@ export default function SettingsDialog({
                   </p>
                 </div>
               )}
+
+              {ambiente && <AmbientacionSection ambiente={ambiente} />}
             </section>
 
             <section className="settings-section">

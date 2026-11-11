@@ -124,6 +124,9 @@ function summarizeIvaDoc(doc) {
 const avisos = [];
 // Sugerencias en memoria (mismo contrato que AppsScript-Sugerencias.gs).
 const sugerencias = [];
+// Preferencias por usuario (AppsScript-Preferencias.gs).
+const preferencias = new Map();
+const AMBIENTES_OK = ['ninguna', 'automatica', 'navidad', 'anio-nuevo', 'semana-santa', 'independencia', 'san-juan', 'verano', 'otono', 'invierno', 'primavera'];
 const pinturas = []; // filas pintadas por recepcionPintarFila
 const MOCK_COLORES_IVA = { 0: '#ffff99', 1: '#cc99ff', 2: '#4285f4', 3: '#ffcc99', 4: '#ccecff', 5: '#ffff99', 6: '#b6d7a8', 7: '#ffccff', 8: '#cde9de', 9: '#8e7cc3' };
 const sameName = (a, b) => String(a || '').trim().toLowerCase() === String(b || '').trim().toLowerCase();
@@ -362,6 +365,20 @@ export async function handle(body) {
       const colores = { ...MOCK_COLORES_IVA, ...((iva.config && iva.config.colores) || {}) };
       pinturas.push({ year: body.year, sheet: body.sheet, row: row._row, color: colores[digito] });
       return { ok: true, pintado: true, color: colores[digito], origen: `vencimientos IVA (VENC. ${digito})`, digito };
+    }
+    case 'preferenciasObtener': {
+      const p = preferencias.get(session.user) || { ambientacion: process.env.AMBIENTE || 'ninguna', animacion: true };
+      return { ok: true, ...p };
+    }
+    case 'preferenciasGuardar': {
+      const p = { ...(preferencias.get(session.user) || { ambientacion: process.env.AMBIENTE || 'ninguna', animacion: true }) };
+      if (body.ambientacion !== undefined) {
+        if (!AMBIENTES_OK.includes(body.ambientacion)) return { ok: false, code: 'PREFERENCIA_AMBIENTACION', error: 'Ambientación no válida' };
+        p.ambientacion = body.ambientacion;
+      }
+      if (body.animacion !== undefined) p.animacion = body.animacion === true;
+      preferencias.set(session.user, p);
+      return { ok: true, ...p };
     }
     case 'sugerenciasCrear': {
       const tipo = String(body.tipo || '').toLowerCase();

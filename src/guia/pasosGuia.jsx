@@ -387,6 +387,10 @@ export function construirPasosGuia({ canAssign, isSuper }) {
             Elegí el tema <strong>claro u oscuro</strong>, el <strong>tamaño de texto</strong> y cambiá tu{' '}
             <strong>PIN</strong> de acceso.
           </p>
+          <p>
+            En <strong>Ambientación</strong> podés decorar tu panel según la época: Navidad, Año Nuevo,
+            Semana Santa, Independencia, San Juan o las estaciones del año (o «Automática», que cambia sola).
+          </p>
           {isSuper && (
             <p>
               Como Superusuario, además podés <strong>gestionar usuarios</strong>: dar PIN temporales,
