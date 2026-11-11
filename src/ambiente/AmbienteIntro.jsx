@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 // Animación corta al ingresar (nieve, hojas, confeti…). Cae unos pocos
 // elementos durante ~6 segundos y desaparece sola. No bloquea clics, se
@@ -8,14 +9,18 @@ import { useEffect, useState } from 'react';
 const DURACION_MS = 7000;
 
 function preparar(particula, angosta) {
-  const base = particula.cantidad || (angosta ? 10 : 16);
+  const base = particula.cantidad || (angosta ? 12 : 20);
+  // Franjas parejas a lo ancho, en orden mezclado (no de izquierda a derecha).
+  const franjas = Array.from({ length: base }, (_, i) => i).sort(() => Math.random() - 0.5);
   const lista = [];
   for (let i = 0; i < base; i++) {
     const item = {
       id: i,
-      left: 3 + ((i * 97) % 94) + Math.random() * 3, // repartidos a lo ancho
-      delay: Math.random() * 2.2,
-      dur: 4.2 + Math.random() * 2.2,
+      left: ((franjas[i] + 0.15 + Math.random() * 0.7) / base) * 100,
+      // Algunas arrancan ya a mitad de camino (demora negativa): la pantalla
+      // se llena pareja desde el primer momento, no sólo arriba.
+      delay: -3.6 + Math.random() * 5,
+      dur: 5 + Math.random() * 2,
       size: 12 + Math.random() * 9,
       sway: (Math.random() < 0.5 ? -1 : 1) * (12 + Math.random() * 30),
       rot: Math.round(Math.random() * 360),
@@ -38,7 +43,9 @@ export default function AmbienteIntro({ ambiente, onFin }) {
     return () => clearTimeout(t);
   }, [onFin]);
 
-  return (
+  // En document.body: cubre toda la pantalla aunque la app se desplace o
+  // algún contenedor tenga efectos (en la PC y en el celular).
+  return createPortal(
     <div className={`rx-amb-intro is-${direccion}`} aria-hidden="true">
       {items.map((p) => (
         <span
@@ -57,6 +64,7 @@ export default function AmbienteIntro({ ambiente, onFin }) {
           {p.simbolo || ''}
         </span>
       ))}
-    </div>
+    </div>,
+    document.body
   );
 }

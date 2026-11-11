@@ -98,11 +98,17 @@ Qué revisar:
   (se recuerda por usuario en ese dispositivo).
 - Recorre Estadísticas, Clientes, la ficha, Vencimientos IVA y la barra de
   arriba; ADMINISTRADOR y SUPERUSUARIO ven además Asignar y Marcaciones
-  (USUARIO: 19 pasos; administradores: 21).
+  (USUARIO: 20 pasos; administradores: 22).
 - Oscurece la pantalla e ilumina el elemento del que habla; cambia sola de
   sección. En el celular apunta a la barra de abajo.
 - Botones Anterior / Siguiente / Saltar guía, teclas ← → Enter y Esc.
 - Al terminar vuelve a Clientes; el botón **?** de la barra la repite.
+- Entra de verdad a cada parte: abre la ficha del primer cliente (cabecera y
+  Registro de documentación) y su liquidación de IVA (formulario y ficha para
+  el cliente), sin cambiar nada, y vuelve sola con «Volver» al seguir o al
+  ir hacia atrás. Espera hasta 12 s a que cargue cada sección («Abriendo
+  esta parte del sistema…»), pensado para la planilla real de Google.
+- En el celular la tarjeta es compacta, va abajo y no tapa lo iluminado.
 
 ### CAMBIO-3 · Sugerencias
 
@@ -158,8 +164,8 @@ Qué revisar:
   pie de la barra (guirnalda de luces en Navidad, franja tricolor en
   Independencia…) y un saludo «¡Felices fiestas, Nombre!» (en el celular,
   sólo el ícono). Los colores de vencimiento y los estados no cambian.
-- Animación al ingresar: pocos copos, hojas o confeti durante unos 6
-  segundos, sin bloquear la pantalla. Una vez por ingreso (no al recargar),
+- Animación al ingresar: pocos copos, hojas o confeti repartidos en toda la
+  pantalla (PC y celular) durante unos 6 segundos, sin bloquear la pantalla. Una vez por ingreso (no al recargar),
   se puede apagar y no aparece si el dispositivo pide reducir el movimiento.
   Al elegir una ambientación se muestra como vista previa.
 - Se guarda en el usuario: la misma elección en la PC y en el celular; cada

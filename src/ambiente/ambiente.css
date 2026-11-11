@@ -180,8 +180,14 @@
 
 /* ── Animación al ingresar ──────────────────────────────────────────── */
 .rx-amb-intro {
+  /* Alto real de la pantalla visible (en el celular, sin la barra del
+     navegador). */
+  --amb-alto: 100vh;
   position: fixed;
   inset: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
   z-index: 1500;
   overflow: hidden;
   pointer-events: none;
@@ -241,22 +247,28 @@
 
 @keyframes rx-amb-cae {
   0% { opacity: 0; transform: translate3d(0, 0, 0) rotate(var(--rot)); }
-  10% { opacity: 0.85; }
-  50% { transform: translate3d(var(--sway), 50vh, 0) rotate(calc(var(--rot) + 120deg)); }
-  85% { opacity: 0.75; }
-  100% { opacity: 0; transform: translate3d(calc(var(--sway) * -0.4), 92vh, 0) rotate(calc(var(--rot) + 240deg)); }
+  6% { opacity: 0.85; }
+  50% { transform: translate3d(var(--sway), calc(var(--amb-alto) * 0.52), 0) rotate(calc(var(--rot) + 120deg)); }
+  88% { opacity: 0.75; }
+  100% { opacity: 0; transform: translate3d(calc(var(--sway) * -0.4), calc(var(--amb-alto) + 40px), 0) rotate(calc(var(--rot) + 240deg)); }
 }
 
 @keyframes rx-amb-sube {
   0% { opacity: 0; transform: translate3d(0, 0, 0); }
   15% { opacity: 0.9; }
-  100% { opacity: 0; transform: translate3d(var(--sway), -55vh, 0); }
+  100% { opacity: 0; transform: translate3d(var(--sway), calc(var(--amb-alto) * -0.85), 0); }
 }
 
 @keyframes rx-amb-flota {
   0% { opacity: 0; transform: translate3d(0, 0, 0); }
   15% { opacity: 0.8; }
-  100% { opacity: 0; transform: translate3d(calc(var(--sway) * 3), -70vh, 0); }
+  100% { opacity: 0; transform: translate3d(calc(var(--sway) * 3), calc(var(--amb-alto) * -0.9), 0); }
+}
+
+@supports (height: 100dvh) {
+  .rx-amb-intro {
+    --amb-alto: 100dvh;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

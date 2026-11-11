@@ -719,11 +719,19 @@ export default function App({
   useEffect(() => {
     tabChangeRef.current = handleMobileTabChange;
   }, [handleMobileTabChange]);
-  const handleGuiaNavigate = useCallback((tab) => {
+  // Sección visible ahora (para que la guía no la reinicie sin necesidad).
+  const tabActualRef = useRef('');
+  useEffect(() => {
+    tabActualRef.current = assignClientsOpen ? 'assign' : mobileTab;
+  }, [assignClientsOpen, mobileTab]);
+  const handleGuiaNavigate = useCallback((tab, mantener = false) => {
     setBuzonOpen(false);
     setSugOpen(false);
     setSettingsOpen(false);
     setMobileMenuOpen(false);
+    // «mantener»: si ya está en esa sección, deja abierta la ficha o la
+    // liquidación que la guía está mostrando.
+    if (mantener && tabActualRef.current === tab) return;
     tabChangeRef.current(tab);
   }, []);
   const abrirGuia = useCallback(() => {

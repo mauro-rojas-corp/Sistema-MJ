@@ -6,11 +6,21 @@ import { ArrowLeft, ArrowRight, X } from 'lucide-react';
 // con la explicación. Si el elemento no está en pantalla (por ejemplo, en el
 // celular o por el rol del usuario), la tarjeta se muestra centrada.
 //
-// steps: [{ id, title, body, target?: selector CSS, tab?: sección a abrir }]
-// onNavigate(tab): la app cambia de sección antes de mostrar el paso.
+// steps: [{ id, title, body,
+//   target?: selector CSS del elemento a iluminar,
+//   tab?: sección a abrir antes del paso,
+//   mantener?: si ya está en esa sección, no la reinicia (no cierra la
+//     ficha ni la liquidación abiertas),
+//   salir?: selector de un botón «Volver» a tocar si está a la vista (para
+//     salir de una pantalla abierta en el paso anterior),
+//   abrir?: selector a tocar si el elemento todavía no está (por ejemplo,
+//     el primer cliente de la lista para mostrar su ficha) }]
+// onNavigate(tab, mantener): la app cambia de sección antes del paso.
 
 const MARGEN = 8; // aire alrededor del elemento iluminado
-const ESPERA_MAX_MS = 1500; // tiempo para que aparezca el elemento tras navegar
+// Con la planilla real cada sección puede tardar varios segundos en cargar:
+// la guía espera hasta este tiempo antes de mostrar la tarjeta sin foco.
+const ESPERA_MAX_MS = 12000;
 
 function buscarVisible(selector) {
   if (!selector) return null;
@@ -29,15 +39,15 @@ function buscarVisible(selector) {
 function acomodar(el, alturaTarjeta) {
   const r = el.getBoundingClientRect();
   const vh = window.innerHeight;
-  const necesita = alturaTarjeta + 40;
-  const visible = r.top >= 0 && r.bottom <= vh;
-  if (visible && (vh - r.bottom >= necesita || r.top >= necesita)) return;
-  if (r.height + necesita + 96 <= vh) {
-    // Elemento arriba (bajo la barra) y la tarjeta debajo.
-    window.scrollBy({ top: r.top - 96, behavior: 'auto' });
-  } else {
-    el.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'auto' });
-  }
+  const celular = window.innerWidth < 560;
+  // En el celular la tarjeta va abajo (máx. ~48 % de la pantalla): el
+  // elemento se lleva arriba, justo debajo de la barra.
+  const arriba = celular ? 66 : 96;
+  const necesita = (celular ? Math.min(alturaTarjeta, vh * 0.48) : alturaTarjeta) + 40;
+  const visible = r.top >= arriba - 10 && r.bottom <= vh;
+  if (visible && (vh - r.bottom >= necesita || (!celular && r.top >= necesita))) return;
+  // Elemento arriba y la tarjeta debajo; si es muy alto, se ve su comienzo.
+  window.scrollBy({ top: r.top - arriba, behavior: 'auto' });
 }
 
 export default function GuidedTour({ steps, onNavigate, onClose }) {
@@ -46,6 +56,7 @@ export default function GuidedTour({ steps, onNavigate, onClose }) {
   // corresponde: al cambiar de paso, el del anterior deja de valer solo.
   const [spot, setSpot] = useState({ index: -1, rect: null });
   const rect = spot.index === index ? spot.rect : null;
+  const buscando = Boolean(steps[index]?.target) && spot.index !== index;
   const [cardStyle, setCardStyle] = useState({});
   const cardRef = useRef(null);
   const elementRef = useRef(null);
@@ -58,13 +69,35 @@ export default function GuidedTour({ steps, onNavigate, onClose }) {
     if (!step) return undefined;
     let cancelado = false;
     // Cambiar de sección fuera del efecto, en una tarea aparte.
-    const nav = step.tab ? setTimeout(() => !cancelado && onNavigate(step.tab), 0) : null;
+    const nav = step.tab ? setTimeout(() => !cancelado && onNavigate(step.tab, Boolean(step.mantener)), 0) : null;
     const inicio = Date.now();
+    let ultimoClic = 0;
     elementRef.current = null;
     const intentar = () => {
       if (cancelado) return;
+      const vencido = Date.now() - inicio > ESPERA_MAX_MS;
+      // Primero salir de lo que quedó abierto del paso anterior (botón
+      // «Volver»); hasta que se cierre, el paso no se muestra.
+      const volver = step.salir && buscarVisible(step.salir);
+      if (volver && !vencido) {
+        if (Date.now() - ultimoClic > 900) {
+          ultimoClic = Date.now();
+          volver.click();
+        }
+        setTimeout(intentar, 80);
+        return;
+      }
       const el = buscarVisible(step.target);
-      if (el || !step.target || Date.now() - inicio > ESPERA_MAX_MS) {
+      // Después, abrir lo que el paso muestra (se reintenta cada ~1 s por si
+      // la sección todavía estaba cargando).
+      if (!el && step.abrir && Date.now() - ultimoClic > 900) {
+        const abrir = buscarVisible(step.abrir);
+        if (abrir) {
+          ultimoClic = Date.now();
+          abrir.click();
+        }
+      }
+      if (el || !step.target || vencido) {
         elementRef.current = el;
         if (el) acomodar(el, cardRef.current?.offsetHeight || 420);
         setSpot({ index, rect: el ? el.getBoundingClientRect() : null });
@@ -79,6 +112,13 @@ export default function GuidedTour({ steps, onNavigate, onClose }) {
       if (nav) clearTimeout(nav);
     };
   }, [step, index, onNavigate]);
+
+  // Mientras dura la guía, la página tiene lugar de sobra abajo: así siempre
+  // se puede subir lo iluminado y dejar espacio para la tarjeta.
+  useEffect(() => {
+    document.documentElement.classList.add('rx-tour-on');
+    return () => document.documentElement.classList.remove('rx-tour-on');
+  }, []);
 
   // Seguir al elemento si la página se desplaza o cambia de tamaño.
   useEffect(() => {
@@ -110,7 +150,8 @@ export default function GuidedTour({ steps, onNavigate, onClose }) {
       setCardStyle(
         rect && vw < 560
           ? // En el celular: tarjeta abajo o arriba, a lo ancho.
-            rect.top + rect.height / 2 > vh / 2
+            // (abajo si lo iluminado empieza en la mitad de arriba)
+            rect.top > vh * 0.45
             ? { left: 12, right: 12, top: 12 }
             : { left: 12, right: 12, bottom: 12 }
           : { left: (vw - cw) / 2, top: Math.max(12, (vh - ch) / 2), width: cw }
@@ -206,6 +247,11 @@ export default function GuidedTour({ steps, onNavigate, onClose }) {
           </div>
         )}
         <h2 id="rx-tour-title">{step.title}</h2>
+        {buscando && (
+          <div className="rx-tour-loading" role="status">
+            <span className="rx-tour-loading-dot" aria-hidden="true" /> Abriendo esta parte del sistema…
+          </div>
+        )}
         <div id="rx-tour-body" className="rx-tour-body">
           {step.body}
         </div>

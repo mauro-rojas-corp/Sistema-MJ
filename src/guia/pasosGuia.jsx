@@ -145,25 +145,21 @@ export function construirPasosGuia({ canAssign, isSuper }) {
       emoji: '🗂️',
       title: 'La ficha del cliente',
       tab: 'clients',
+      mantener: true,
+      abrir: '.real-exec-client-row',
+      target: '.rx-client-head',
       body: (
         <>
-          <p>Al abrir un cliente vas a ver, de arriba hacia abajo:</p>
+          <p>
+            Al tocar un cliente se abre su ficha (acá abrimos el primero como ejemplo; no se cambia nada).
+            Arriba está la <strong>cabecera</strong>:
+          </p>
           <ul>
-            <li>
-              <strong>Cabecera</strong>: nombre, RUC, una etiqueta <strong>VENC.</strong> con el color de su
-              vencimiento y los accesos a <strong>Abrir Marangatu</strong> (entra solo con la extensión
-              Ekuatia) y <strong>Liquidación IVA</strong>.
-            </li>
-            <li>
-              <strong>Registro de documentación</strong>: marcá Ventas, Compras, Nota de crédito y
-              Despacho a medida que llegan; escribí lo que llegó y apretá <strong>Enter</strong> para
-              sumarlo a la lista.
-            </li>
-            <li>
-              <strong>Datos del cliente</strong>: zona, barrio, contacto, teléfono, Clave MH y el resto
-              de las columnas, todo editable.
-            </li>
+            <li>Nombre, RUC y la etiqueta <strong>VENC.</strong> con el color de su vencimiento.</li>
+            <li><strong>Abrir Marangatu</strong> entra solo con la extensión Ekuatia.</li>
+            <li><strong>Liquidación IVA</strong> abre su liquidación del mes.</li>
           </ul>
+          {tip(<>Más abajo, en <strong>Datos del cliente</strong>, están zona, contacto, teléfono, Clave MH y el resto de las columnas, todo editable.</>)}
         </>
       ),
     },
@@ -172,8 +168,15 @@ export function construirPasosGuia({ canAssign, isSuper }) {
       emoji: '📨',
       title: 'Registrar la documentación',
       tab: 'clients',
+      mantener: true,
+      abrir: '.real-exec-client-row',
+      target: '.rx-doc-grid',
       body: (
         <>
+          <p>
+            Acá marcás <strong>Ventas, Compras, Nota de crédito y Despacho</strong> a medida que llegan:
+            escribí lo que llegó y apretá <strong>Enter</strong> para sumarlo a la lista.
+          </p>
           <p>
             Al tocar <strong>Registrar recepción</strong> el sistema guarda los documentos y las
             observaciones, completa la <strong>fecha de hoy</strong> sola y pinta la fila del cliente en la
@@ -197,6 +200,8 @@ export function construirPasosGuia({ canAssign, isSuper }) {
       emoji: '🧾',
       title: 'Vencimientos IVA: el período fiscal',
       tab: 'iva',
+      mantener: true,
+      salir: '.iva-ehead .iva-btn',
       target: '.iva-period',
       body: (
         <>
@@ -216,6 +221,8 @@ export function construirPasosGuia({ canAssign, isSuper }) {
       emoji: '🎨',
       title: 'Los días de vencimiento',
       tab: 'iva',
+      mantener: true,
+      salir: '.iva-ehead .iva-btn',
       target: '.iva-strip',
       body: (
         <>
@@ -236,6 +243,8 @@ export function construirPasosGuia({ canAssign, isSuper }) {
       emoji: '✅',
       title: 'Estados y filtros',
       tab: 'iva',
+      mantener: true,
+      salir: '.iva-ehead .iva-btn',
       target: '.iva-filters',
       body: (
         <>
@@ -258,15 +267,38 @@ export function construirPasosGuia({ canAssign, isSuper }) {
       emoji: '🧮',
       title: 'La liquidación de cada cliente',
       tab: 'iva',
-      target: 'table.iva-rows tbody tr',
+      mantener: true,
+      abrir: 'table.iva-rows tbody tr',
+      target: '.iva-meta',
       body: (
         <>
-          <p>Tocá un cliente de la lista para abrir su liquidación:</p>
+          <p>
+            Al tocar un cliente de la lista se abre su liquidación (acá abrimos el primero como ejemplo; no se
+            cambia nada):
+          </p>
           <ul>
             <li>Cargá los montos de <strong>Ventas, Compras</strong> y demás rubros; se calcula sola y se guarda sola.</li>
             <li>Elegí el <strong>Estado</strong> y, si se paga tarde, la fecha de pago para calcular la mora.</li>
-            <li>A la derecha ves la <strong>ficha</strong> que recibe el cliente: descargala en imagen o PDF, copiala o enviala por <strong>WhatsApp</strong>.</li>
-            <li><strong>Copiar a Marangatu</strong> completa el Formulario 120 con la extensión, y <strong>Descargar formularios</strong> baja los ya presentados.</li>
+            <li>Con <strong>Volver</strong> regresás a la lista.</li>
+          </ul>
+        </>
+      ),
+    },
+    {
+      id: 'iva-ficha',
+      emoji: '📤',
+      title: 'La ficha para el cliente',
+      tab: 'iva',
+      mantener: true,
+      abrir: 'table.iva-rows tbody tr',
+      target: '.iva-side',
+      body: (
+        <>
+          <p>Esta es la ficha que recibe el cliente, armada con los montos de la liquidación:</p>
+          <ul>
+            <li>Descargala en <strong>imagen o PDF</strong>, copiala o enviala por <strong>WhatsApp</strong>.</li>
+            <li><strong>Copiar a Marangatu</strong> completa el Formulario 120 con la extensión.</li>
+            <li><strong>Descargar formularios</strong> baja los ya presentados.</li>
           </ul>
         </>
       ),
@@ -276,6 +308,8 @@ export function construirPasosGuia({ canAssign, isSuper }) {
       emoji: '⚙️',
       title: 'Colores y feriados',
       tab: 'iva',
+      mantener: true,
+      salir: '.iva-ehead .iva-btn',
       target: '.iva-tabs',
       body: (
         <>

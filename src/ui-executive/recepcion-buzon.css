@@ -1335,3 +1335,62 @@
 .rx-sug-estado.is-resuelta {
   color: var(--rx-green, #15906f);
 }
+
+.rx-tour-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 8px;
+  color: var(--rx-muted, #5a5e62);
+  font-size: var(--rx-fs-sm, 14px);
+}
+
+.rx-tour-loading-dot {
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--rx-brand, #27658d);
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: rx-tour-giro 0.8s linear infinite;
+}
+
+@keyframes rx-tour-giro {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Guía en el celular: tarjeta compacta abajo (no tapa lo iluminado) con
+   los botones siempre a la vista. */
+@media (max-width: 559px) {
+  .rx-tour-card {
+    max-height: 48vh;
+    max-height: 48dvh;
+    padding-top: 12px;
+    padding-bottom: 0;
+  }
+  .rx-tour-emoji {
+    float: left;
+    margin: 0 8px 0 0;
+    font-size: 22px;
+    line-height: 1.2;
+  }
+  .rx-tour-card h2 {
+    font-size: var(--rx-fs-lg, 16px);
+  }
+  .rx-tour-body {
+    clear: both;
+    font-size: var(--rx-fs-sm, 14px);
+  }
+  .rx-tour-actions {
+    position: sticky;
+    bottom: 0;
+    margin-top: 6px;
+    padding: 8px 0 12px;
+    background: var(--rx-surface, #fff);
+  }
+}
+
+html.rx-tour-on body {
+  padding-bottom: 70vh;
+}
