@@ -7,9 +7,14 @@ Puente exclusivo entre **Control Clientes** y Marangatu. Hace tres cosas:
    service worker abre la página oficial de acceso e inyecta los datos una
    sola vez.
 2. **Formulario 120 (IVA):** desde la ficha IVA del cliente, **Copiar a
-   Marangatu** envía las casillas calculadas. Estando en el Formulario 120 de
-   Marangatu, el ícono de la extensión → **Completar formulario** las escribe
-   en sus campos y las marca en amarillo. **La extensión nunca presenta la
+   Marangatu** envía las casillas calculadas y la extensión hace el recorrido:
+   sesión del cliente (cierra la de otro cliente y sus ventanas; si ya es la
+   suya, la reutiliza) → login con su clave → **Presentar Declaración** (en la
+   misma ventana o en una nueva, como lo abra Marangatu) → elige 211 · Mensual
+   · año · mes → la persona toca **Abrir declaración** → apenas aparece el
+   formulario (en la misma pantalla, en otra ventana o en un marco) lo
+   completa y marca en amarillo (`ivaContent.js`). El ícono → **Completar
+   formulario** sigue disponible a mano. **La extensión nunca presenta la
    declaración:** la revisión y el botón "Presentar" son siempre de la
    persona.
 3. **Descarga de formularios IVA (v2.0):** baja como PDF las declaraciones de
@@ -112,9 +117,18 @@ mientras está activado.
 - **Una sola pestaña de trabajo:** el login, el Formulario 120 y la descarga
   reutilizan la pestaña de Marangatu que ya esté abierta (o crean una sola).
   La app ya no abre ventanas propias salvo que la extensión no responda.
-- **Sesión limpia:** antes de entrar con un cliente se cierra la sesión que
-  hubiera (Marangatu comparte la sesión entre pestañas) y se espera la pantalla
-  de acceso. Si no se puede cerrar, se avisa y no se sigue.
+- **Sesión del cliente (v2.9):** la extensión recuerda con qué RUC entró
+  (sólo el RUC, nunca la clave). Si se pide el mismo cliente, reutiliza la
+  sesión; si es otro (o una sesión iniciada a mano), la cierra, cierra las
+  demás pestañas de Marangatu que quedaron del cliente anterior y espera la
+  pantalla de acceso. Para cerrar usa el menú del usuario de la pestaña de
+  trabajo; si esa ventana no lo tiene (formulario, Visión Integral), el de
+  otra pestaña de Marangatu, o la dirección de «Cerrar sesión» que el panel
+  anotó antes. El cierre se confirma viendo la pantalla de acceso.
+- **Mensajes a las pestañas:** cada content script responde sólo a sus
+  propios mensajes (antes `descargaContent.js` respondía a todos y tapaba la
+  respuesta del panel: la extensión creía que no había sesión y no la
+  cerraba).
 - **Nunca se traba por la sesión previa:** desde la app, si no se puede cerrar
   la sesión que había (no se reconoce «Salir», o la pestaña se abrió antes de
   cargar la extensión: en ese caso se recarga sola) se sigue con esa sesión y se

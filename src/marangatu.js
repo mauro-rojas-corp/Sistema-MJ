@@ -33,8 +33,9 @@ export function openMarangatuLogin({ user, pass }, onError) {
 
 // Le pasa a la extensión las casillas del Formulario 120 de un cliente. La
 // extensión las guarda sólo en memoria (chrome.storage.session, con
-// vencimiento) hasta que se pulsa "Completar formulario" en Marangatu, y
-// abre el login con las credenciales si vienen. Resuelve { ok, error }.
+// vencimiento), cierra la sesión de otro cliente si la había (o reutiliza la
+// del mismo), entra con las credenciales si vienen, va a «Presentar
+// Declaración» y completa el formulario cuando aparece. Resuelve { ok, error }.
 export function sendIvaToMarangatu({ ruc, nombre, periodo, casillas, control = [], credentials }) {
   const runtime = typeof chrome !== 'undefined' ? chrome.runtime : undefined;
   if (!MARANGATU_EXT_ID || !runtime?.sendMessage) {

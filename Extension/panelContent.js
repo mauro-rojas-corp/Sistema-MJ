@@ -37,6 +37,23 @@
     }) || null;
   }
 
+  // Dirección del control de salida aunque esté escondido (dentro del menú
+  // cerrado). El service worker la guarda para poder cerrar la sesión desde
+  // cualquier ventana, también desde las que no tienen el menú del usuario.
+  function urlSalir() {
+    for (const a of document.querySelectorAll('a[href]')) {
+      const href = a.getAttribute('href') || '';
+      if (/^\s*javascript:/i.test(href) || href === '#') continue;
+      const texto = norm(a.textContent || a.getAttribute('title') || a.getAttribute('aria-label'));
+      if (!HREF_SALIR.test(href) && !TEXTO_SALIR.test(texto)) continue;
+      try {
+        const u = new URL(a.href, location.href);
+        if (u.hostname === location.hostname) return u.href;
+      } catch { /* dirección inválida */ }
+    }
+    return '';
+  }
+
   // Marangatu muestra en el encabezado el NOMBRE del usuario de la sesión, en el
   // menú desplegable #navbarDropdownMenuLink (confirmado con el relevamiento).
   function menuUsuario() {
@@ -75,35 +92,42 @@
       usuario: !login && menu ? norm(menu.textContent).slice(0, 80) : '',
       rucs: !login && (menu || salir) ? leerRucs() : [],
       pagina: pagina ? { id: pagina.id, nombre: pagina.nombre } : null,
+      urlSalir: login ? '' : urlSalir(),
     };
   }
 
   const dormir = (ms) => new Promise((r) => setTimeout(r, ms));
 
-  // Hace clic en "Salir" y, si aparece una confirmación, la acepta.
-  async function cerrarSesionLocal() {
+  // Busca el control de salida (abre el menú del usuario si hace falta).
+  async function prepararSalida() {
     let el = buscarSalir();
-    // El "Salir" suele estar dentro del menú del usuario, cerrado hasta abrirlo.
     const menu = menuUsuario();
-    let abrioMenu = false;
     if (!el && menu) {
       menu.click();
-      abrioMenu = true;
       await dormir(450);
       el = buscarSalir();
+      if (!el) menu.click(); // lo deja como estaba
     }
-    if (!el) {
-      if (abrioMenu) menu.click(); // lo deja como estaba
-      return { ok: false, error: 'No encontré el control para cerrar la sesión.' };
-    }
-    const texto = norm(el.textContent || el.value || el.getAttribute('title')).slice(0, 40);
+    return el;
+  }
+
+  // Clic en "Salir" y, si aparece una confirmación, la acepta. La página
+  // cambia enseguida: por eso quien lo pide recibe la respuesta ANTES del clic
+  // y confirma el cierre viendo aparecer la pantalla de acceso.
+  async function ejecutarSalida(el) {
     el.click();
     await dormir(700);
     const confirmar = [...document.querySelectorAll('.modal button, .modal a.btn, [role="dialog"] button')]
       .filter(visible)
       .find((b) => /^(s[ií]|aceptar|confirmar|ok|salir)$/i.test(norm(b.textContent)));
     if (confirmar) confirmar.click();
-    return { ok: true, texto };
+  }
+
+  async function cerrarSesionLocal() {
+    const el = await prepararSalida();
+    if (!el) return { ok: false, error: 'No encontré el control para cerrar la sesión.' };
+    await ejecutarSalida(el);
+    return { ok: true };
   }
 
   // --- Mensajes del service worker ----------------------------------------------------
@@ -115,7 +139,11 @@
       return false;
     }
     if (msg.action === 'PANEL_CERRAR_SESION') {
-      cerrarSesionLocal().then(sendResponse);
+      prepararSalida().then((el) => {
+        if (!el) { sendResponse({ ok: false, error: 'No encontré el control para cerrar la sesión.' }); return; }
+        sendResponse({ ok: true });
+        setTimeout(() => { ejecutarSalida(el); }, 60);
+      });
       return true;
     }
     return false;

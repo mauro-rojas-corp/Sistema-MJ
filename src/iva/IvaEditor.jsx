@@ -746,10 +746,11 @@ function MarangatuModal({ ctx, draft, onClose, toast }) {
         {status === 'sent' ? (
           <div className="iva-modal-body">
             <ol className="iva-steps">
-              <li>{ctx.cliente.marangatu ? 'Se abrió Marangatu e inicia sesión con la clave del cliente.' : 'Se abrió Marangatu: iniciá sesión con la clave del cliente.'}</li>
-              <li>La extensión entra a <b>Presentar Declaración</b> y elige <b>211 - IVA General · Mensual · {perLabel(ctx.periodo)}</b>. Revisá la selección y continuá.</li>
-              <li>En el formulario, tocá el ícono de la extensión <b>Ekuatia Login</b> → <b>Completar formulario</b>.</li>
-              <li>Revisá cada casilla marcada en amarillo y presentá vos la declaración.</li>
+              <li>Si en Marangatu había abierta la sesión de <b>otro cliente</b>, la extensión la cierra (y sus ventanas); si ya era la de este cliente, la reutiliza.</li>
+              <li>{ctx.cliente.marangatu ? 'Inicia sesión con la clave del cliente.' : 'Iniciá sesión con la clave del cliente.'}</li>
+              <li>Entra a <b>Presentar Declaración</b> y elige <b>211 - IVA General · Mensual · {perLabel(ctx.periodo)}</b>. Revisá la selección y tocá <b>Abrir declaración</b>.</li>
+              <li>Cuando aparece el formulario, la extensión <b>completa las casillas sola</b> y las marca en amarillo (si no lo hiciera: ícono <b>Ekuatia Login</b> → <b>Completar formulario</b>).</li>
+              <li>Revisá cada casilla y presentá vos la declaración: la extensión nunca la presenta.</li>
             </ol>
             <p className="hint">Los datos quedan en la extensión 30 minutos y se borran al cerrar el navegador.</p>
           </div>

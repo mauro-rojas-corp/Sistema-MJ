@@ -279,7 +279,8 @@ async function iniciarDescarga(msg, { tabId = null, user = '', pass = '' } = {})
     const j = await leerJob();
     if (!j || j.id !== job.id) return;
     // Estricto: la sesión no la abrió la extensión con la clave del cliente.
-    j.estricto = !user || !!(r && r.sesionActiva);
+    // (Si la sesión que se mantuvo es la del mismo cliente, no es estricto.)
+    j.estricto = !user || !!(r && r.sesionActiva && !r.mismoCliente);
     j.tabLista = id;
     await guardarJob(j);
     arrancarCuandoEntre(id, j.id);

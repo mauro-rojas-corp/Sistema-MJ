@@ -24,6 +24,12 @@ const CONTEXTO_KEY = 'ekuContexto';
 const SESION_KEY = 'ekuSesion';
 const PESTANA_KEY = 'ekuPestanaTrabajo';
 const AVISO_KEY = 'ekuAviso';
+// Cliente con el que la extensión inició la sesión ({ ruc, ts }) y dirección
+// del control de salida que informó el panel (para cerrar la sesión aunque la
+// pestaña de trabajo no tenga el menú del usuario).
+const CLIENTE_KEY = 'ekuClienteSesion';
+const SALIR_URL_KEY = 'ekuUrlSalir';
+const INICIO_URL = 'https://marangatu.set.gov.py/eset/';
 const AVISO_TTL_MS = 90 * 1000;
 const MARANGATU_MATCH = 'https://marangatu.set.gov.py/*';
 
@@ -88,6 +94,15 @@ async function guardarSesion(s, tabId) {
     : null;
   const usuario = String(s.usuario || '').replace(/\s+/g, ' ').trim().slice(0, 80);
   await chrome.storage.session.set({ [SESION_KEY]: { logueado: !!s.logueado, enLogin: !!s.enLogin, usuario, rucs, pagina, tab: tabId, ts: Date.now() } });
+  if (s.urlSalir && esUrlMarangatu(s.urlSalir)) await chrome.storage.session.set({ [SALIR_URL_KEY]: String(s.urlSalir).slice(0, 500) });
+  // La pestaña de trabajo volvió al acceso: ya no hay cliente con sesión. (Se
+  // ignora el aviso del acceso que llega justo cuando la extensión está
+  // entrando: el cliente recién guardado tiene unos segundos de gracia.)
+  if (s.enLogin) {
+    const d = await chrome.storage.session.get([PESTANA_KEY, CLIENTE_KEY]);
+    const c = d[CLIENTE_KEY];
+    if (d[PESTANA_KEY] === tabId && c && Date.now() - c.ts > 15000) await chrome.storage.session.remove(CLIENTE_KEY);
+  }
   await republicarExtras();
 }
 
@@ -170,23 +185,78 @@ async function pestanaConSesion(tabId) {
   } catch { return false; }
 }
 
-// Deja una pestaña de Marangatu en la pantalla de acceso, SIN sesión abierta:
-// reutiliza la que ya existe (o crea una sola) y, si había una sesión abierta,
-// la cierra antes. Devuelve { ok, tabId } o { ok: false, error, codigo }.
+// Cierra la sesión de Marangatu y espera la pantalla de acceso en la pestaña
+// de trabajo. Marangatu comparte la sesión entre todas sus pestañas, así que
+// alcanza con cerrarla en una:
+//  1. con el panel de la pestaña de trabajo (menú del usuario → Cerrar sesión);
+//  2. si ahí no está el menú (ventana de un formulario, Visión Integral…), con
+//     el panel de otra pestaña de Marangatu que sí lo tenga;
+//  3. si no, yendo a la dirección de salida que el panel informó antes.
+// Devuelve true si la pestaña de trabajo quedó en el acceso.
+async function cerrarSesionMarangatu(tabId) {
+  const llegoAlAcceso = async () => {
+    if (await esperarPaginaLogin(tabId, 8000)) return true;
+    // El «Salir» se hizo en otra pestaña: la de trabajo se lleva al acceso.
+    try { await chrome.tabs.update(tabId, { url: LOGIN_URL }); } catch { return false; }
+    return esperarPaginaLogin(tabId, 12000);
+  };
+
+  const r = await mensajePanel(tabId, { action: 'PANEL_CERRAR_SESION' }, 2);
+  if (r && r.ok && (await llegoAlAcceso())) return true;
+
+  const otras = (await chrome.tabs.query({ url: MARANGATU_MATCH })).filter((t) => t.id !== tabId);
+  for (const t of otras) {
+    const s = await mensajePanel(t.id, { action: 'PANEL_LEER_SESION' }, 1);
+    if (!s || !s.ok || !s.logueado) continue;
+    const c = await mensajePanel(t.id, { action: 'PANEL_CERRAR_SESION' }, 1);
+    if (c && c.ok) {
+      await dormir(1500);
+      if (await llegoAlAcceso()) return true;
+    }
+  }
+
+  const d = await chrome.storage.session.get(SALIR_URL_KEY);
+  if (d[SALIR_URL_KEY]) {
+    try { await chrome.tabs.update(tabId, { url: d[SALIR_URL_KEY] }); } catch { return false; }
+    await dormir(1500);
+    if (await llegoAlAcceso()) return true;
+  }
+  return false;
+}
+
+// Cierra las demás pestañas de Marangatu: con la sesión cerrada quedaron con
+// pantallas del cliente anterior (formularios, Visión Integral…) que ya no
+// sirven y confunden con el cliente nuevo.
+async function cerrarOtrasPestanas(tabId) {
+  const otras = (await chrome.tabs.query({ url: MARANGATU_MATCH })).filter((t) => t.id !== tabId);
+  for (const t of otras) {
+    try { await chrome.tabs.remove(t.id); } catch { /* ya cerrada */ }
+  }
+}
+
+// Deja una pestaña de Marangatu lista para trabajar con el cliente pedido:
+// reutiliza la que ya existe (o crea una sola) y:
+//  - si la sesión abierta es la de ESE cliente (la extensión entró con su RUC),
+//    la deja como está (sesionActiva + mismoCliente);
+//  - si es de otro cliente (o no se sabe de quién es), la cierra, cierra las
+//    pestañas que quedaron del cliente anterior y espera el acceso.
+// Devuelve { ok, tabId, sesionActiva?, mismoCliente?, aviso? } o { ok: false, error, codigo }.
 // Con permitirSesionActiva (descarga desde la app) NUNCA se queda trabado: si la
-// sesión previa no se puede cerrar (no se reconoce el control de salida, la
-// pestaña es anterior a la extensión, etc.) sigue con la sesión abierta y lo
-// informa (sesionActiva: true). La descarga busca al cliente por su RUC en la
-// Visión Integral, así que igual baja los formularios del cliente pedido.
-async function prepararPestanaLogin({ permitirSesionActiva = false } = {}) {
+// sesión previa no se puede cerrar sigue con ella y lo informa (sesionActiva).
+// La descarga busca al cliente por su RUC en la Visión Integral, así que igual
+// baja los formularios del cliente pedido.
+async function prepararPestanaLogin({ permitirSesionActiva = false, ruc = '' } = {}) {
   let tab = await pestanaDeTrabajo();
   if (!tab) {
     tab = await chrome.tabs.create({ url: LOGIN_URL, active: true });
     await chrome.storage.session.set({ [PESTANA_KEY]: tab.id });
-    if (!(await esperarPaginaLogin(tab.id))) {
-      return { ok: false, codigo: 'SESION_PREVIA', error: 'No se llegó a la pantalla de acceso de Marangatu: puede haber una sesión abierta. Cerrala desde el panel de Marangatu e intentá de nuevo.' };
+    if (await esperarPaginaLogin(tab.id)) return { ok: true, tabId: tab.id };
+    // El portal devolvió al inicio: había una sesión abierta (de otra ventana).
+    if (await cerrarSesionMarangatu(tab.id)) {
+      await chrome.storage.session.remove(CLIENTE_KEY);
+      return { ok: true, tabId: tab.id };
     }
-    return { ok: true, tabId: tab.id };
+    return { ok: false, codigo: 'SESION_PREVIA', error: 'Marangatu tiene una sesión abierta que no se pudo cerrar. Cerrala desde el panel de Marangatu e intentá de nuevo.' };
   }
 
   await chrome.storage.session.set({ [PESTANA_KEY]: tab.id });
@@ -200,24 +270,37 @@ async function prepararPestanaLogin({ permitirSesionActiva = false } = {}) {
     await recargarPestana(tab.id);
     s = await mensajePanel(tab.id, { action: 'PANEL_LEER_SESION' }, 4);
   }
-  if (s && s.ok && s.logueado) {
-    // Hay una sesión abierta (de otro cliente, o de éste): se cierra primero.
-    const r = await mensajePanel(tab.id, { action: 'PANEL_CERRAR_SESION' }, 2);
-    if (!r || !r.ok) {
-      if (permitirSesionActiva) return seguirConSesion('No se pudo cerrar la sesión previa de Marangatu: se sigue con la sesión abierta.');
-      return { ok: false, codigo: 'SESION_PREVIA', error: 'Hay una sesión abierta en Marangatu y no encontré cómo cerrarla. Cerrala a mano e intentá de nuevo.' };
-    }
-  } else if (!(s && s.ok && s.enLogin) && !enRutaLogin(tab.url || '')) {
-    // No se sabe si hay sesión (no se reconoce el control de salida): se intenta
-    // ir al acceso; si el portal devuelve al inicio, había sesión.
-    try { await chrome.tabs.update(tab.id, { url: LOGIN_URL }); } catch { return { ok: false, codigo: 'SESION_PREVIA', error: 'No se pudo abrir el acceso de Marangatu.' }; }
-  }
+  const enAcceso = (s && s.ok && s.enLogin) || enRutaLogin(tab.url || '');
 
-  if (!(await esperarPaginaLogin(tab.id))) {
-    if (permitirSesionActiva && (await pestanaConSesion(tab.id))) {
-      return seguirConSesion('Marangatu ya tenía una sesión abierta que no se pudo cerrar: se sigue con esa sesión.');
+  if (!enAcceso) {
+    // ¿La sesión abierta es la del mismo cliente? Sólo si la extensión entró
+    // con su RUC (una sesión iniciada a mano se toma como de otro cliente).
+    const d = await chrome.storage.session.get(CLIENTE_KEY);
+    const cliente = d[CLIENTE_KEY];
+    const esMismoCliente = (x) => !!(x && x.ok && x.logueado && ruc && cliente && rucCoincide(ruc, cliente.ruc));
+    const mismo = { ok: true, tabId: tab.id, sesionActiva: true, mismoCliente: true };
+    if (esMismoCliente(s)) return mismo;
+    if (!(s && s.ok && s.logueado)) {
+      // La pestaña no muestra sesión (o es una ventana sin el menú del
+      // usuario): se va al acceso. Si el portal devuelve al inicio, hay sesión.
+      try { await chrome.tabs.update(tab.id, { url: LOGIN_URL }); } catch { /* sigue abajo */ }
+      if (await esperarPaginaLogin(tab.id, 12000)) {
+        await chrome.storage.session.remove(CLIENTE_KEY);
+        return { ok: true, tabId: tab.id };
+      }
+      s = await mensajePanel(tab.id, { action: 'PANEL_LEER_SESION' }, 4);
+      if (esMismoCliente(s)) return mismo;
     }
-    return { ok: false, codigo: 'SESION_PREVIA', error: 'No se llegó a la pantalla de acceso de Marangatu: puede haber una sesión abierta que no se cerró. Cerrala desde el panel de Marangatu e intentá de nuevo.' };
+    // Sesión de otro cliente (o de quien no se sabe): se cierra.
+    const cerro = await cerrarSesionMarangatu(tab.id);
+    if (!cerro) {
+      if (permitirSesionActiva && (await pestanaConSesion(tab.id))) {
+        return seguirConSesion('No se pudo cerrar la sesión previa de Marangatu: se sigue con la sesión abierta.');
+      }
+      return { ok: false, codigo: 'SESION_PREVIA', error: 'Hay una sesión abierta en Marangatu y no se pudo cerrar. Cerrala desde el panel de Marangatu e intentá de nuevo.' };
+    }
+    await chrome.storage.session.remove(CLIENTE_KEY);
+    await cerrarOtrasPestanas(tab.id);
   }
   return { ok: true, tabId: tab.id };
 }
@@ -236,8 +319,8 @@ async function cerrarSesionDeTrabajo() {
   if (await leerJob()) await cancelarDescarga(); // no se cierra la sesión debajo de una descarga
   const tab = await pestanaDeTrabajo();
   if (!tab) return { ok: false, error: 'No hay una pestaña de Marangatu abierta.' };
-  const r = await mensajePanel(tab.id, { action: 'PANEL_CERRAR_SESION' }, 2);
-  if (!r || !r.ok) return { ok: false, error: 'No encontré cómo cerrar la sesión en esa pestaña.' };
+  if (!(await cerrarSesionMarangatu(tab.id))) return { ok: false, error: 'No se pudo cerrar la sesión de Marangatu.' };
+  await chrome.storage.session.remove(CLIENTE_KEY);
   return { ok: true };
 }
 

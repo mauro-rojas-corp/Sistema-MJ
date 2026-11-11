@@ -41,6 +41,7 @@ original.
 | CAMBIO-4 | Ambientación por época (fechas especiales y estaciones), guardada por usuario | En prueba | No |
 | CAMBIO-5 | Traído de `Jorgeeayala/Sistema-MJ`: actualizar usuarios en «¿Quién sos?» y columnas parejas en la lista de clientes | En prueba | No |
 | CAMBIO-6 | Cada hoja vence el mes siguiente (hoja OCTUBRE → noviembre): ficha, días de retraso y Vencimientos IVA | En prueba | No |
+| CAMBIO-7 | Extensión 2.9: flujo del Formulario 120 (sesión por cliente, cierre de sesión confiable, ventanas como las abre Marangatu, completar al aparecer el formulario) | En prueba | No |
 
 ### CAMBIO-1 · Ficha del cliente y Buzón
 
@@ -199,6 +200,32 @@ Ahora la hoja es el mes de los documentos y vence el mes siguiente:
 
 Archivos: `src/iva/ivaCore.js` (`periodoFiscalDeHoja`), `src/iva/IvaModule.jsx`,
 `src/screens/ClientDetail.jsx` y `src/guia/pasosGuia.jsx` (texto).
+
+### CAMBIO-7 · Extensión 2.9: flujo del Formulario 120
+
+Archivos: `Extension/` (`background.js`, `sesionBg.js`, `panelContent.js`,
+`descargaContent.js`, `descargaBg.js`, `ivaContent.js` nuevo, `manifest.json`,
+`README.md`) y los pasos que muestra la app (`src/iva/IvaEditor.jsx`).
+
+Qué se corrigió:
+- **Cerrar sesión no se ejecutaba:** `descargaContent.js` contestaba a todos
+  los mensajes y tapaba al panel; la extensión creía que no había sesión.
+  Además el panel hacía clic en «Salir» antes de responder (la respuesta se
+  perdía con el cambio de página).
+- **Otro cliente / mismo cliente:** recuerda con qué RUC entró; mismo cliente
+  → reutiliza la sesión; otro → cierra la sesión (desde la ventana que tenga
+  el menú o con la dirección de salida) y las pestañas del cliente anterior.
+- **Ventanas:** «Presentar Declaración» se abre en la misma ventana o en una
+  nueva según el enlace de Marangatu.
+- **Contexto del formulario:** `ivaContent.js` corre en todas las ventanas y
+  marcos de Marangatu, elige 211 · Mensual · año · mes y espera a que aparezca
+  el formulario (después de «Abrir declaración») para completarlo.
+
+Probado con un Marangatu simulado (acceso, menú del usuario con «Cerrar
+sesión» escondido, «Presentar Declaración» en ventana nueva o en la misma,
+formulario en la misma pantalla o en otra ventana, ventana sin menú): cliente
+nuevo, mismo cliente, otro cliente desde una ventana sin menú, sesión
+iniciada a mano y cierre desde la app.
 
 ## Las tres piezas separadas
 

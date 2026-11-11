@@ -5,9 +5,12 @@
 //    Marangatu y se inyecta una sola vez.
 //  - APP_IVA_PREPARE: la app manda las casillas del Formulario 120 de un
 //    cliente. Se guardan en chrome.storage.session (memoria del navegador,
-//    se borra al cerrarlo) con vencimiento, hasta que desde el popup se
-//    pulsa "Completar formulario". Si vienen credenciales, además abre el
-//    login como APP_AUTO_LOGIN.
+//    se borra al cerrarlo) con vencimiento. Recorrido: sesión del cliente
+//    (cierra la de otro cliente; si ya es la suya, la reutiliza) → login →
+//    «Presentar Declaración» (en la misma ventana o en una nueva, como lo
+//    abra Marangatu) → 211 · Mensual · año · mes → la persona toca «Abrir
+//    declaración» → ivaContent.js espera el formulario y lo completa. Nunca
+//    presenta la declaración.
 // Las credenciales nunca se guardan, ni se colocan en la URL, el historial
 // o el portapapeles.
 // seleccionarObligacionIva y mostrarReferenciaIva viven en formulario120.js.
@@ -69,50 +72,52 @@ chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
     }
     // Después del login (automático o a mano) el Formulario 120 entra a
     // "Presentar Declaración". Se reutiliza la pestaña de Marangatu que haya.
-    const r = await abrirLogin(user, pass, pendiente ? irAPresentarCuandoEntre : undefined);
+    // El RUC con que se entra identifica al cliente: si la sesión abierta es
+    // la suya se reutiliza; si es de otro, se cierra antes.
+    const ruc = String(user || (pendiente && pendiente.ruc) || '').replace(/\D/g, '');
+    const r = await abrirLogin(user, pass, pendiente ? irAPresentarCuandoEntre : undefined, { ruc });
     sendResponse(r && r.ok ? { ok: true } : { ok: false, error: (r && r.error) || 'No se pudo abrir Marangatu.' });
   })();
   return true;
 });
 
-// Mientras haya casillas pendientes, en cada página de Marangatu se muestra
-// la referencia (cliente y período) y, en "Presentar Declaración", se eligen
-// 211 - IVA General, Mensual, año y mes. Se hace una vez por carga de página.
-chrome.tabs.onUpdated.addListener((tabId, info, tab) => {
-  if (info.status !== 'complete') return;
-  let url;
-  try { url = new URL(tab.url || ''); } catch { return; }
-  if (url.hostname !== MARANGATU_HOST || url.pathname.includes('/login')) return;
+// Formulario 120 pendiente: lo piden las páginas de Marangatu (ivaContent.js,
+// en todas sus ventanas y marcos) para elegir la obligación y completar el
+// formulario cuando aparezca. Las pestañas de una descarga en curso no lo
+// reciben.
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (!msg || sender.id !== chrome.runtime.id || !sender.tab) return false;
+  const deMarangatu = (sender.origin === 'https://' + MARANGATU_HOST) || esUrlMarangatu(sender.url || '') || esUrlMarangatu(sender.tab.url || '');
+  if (!deMarangatu) return false;
 
-  chrome.storage.session.get([IVA_STORAGE_KEY, DESCARGA_KEY], (data) => {
-    // Las pestañas de una descarga en curso las maneja descargaBg.js: acá no
-    // se completa ni se marca nada en ellas.
-    const d = data && data[DESCARGA_KEY];
-    if (d && (d.tabLista === tabId || d.tabForm === tabId)) return;
-    const p = data && data[IVA_STORAGE_KEY];
-    if (!p || p.expiresAt < Date.now()) return;
-    const ref = referenciaPeriodo(p);
-    // Formulario 120 abierto: se completa solo, únicamente en los campos
-    // vacíos (nunca pisa lo que la persona ya escribió) y el resultado se
-    // muestra en el recuadro de referencia.
-    chrome.scripting.executeScript(
-      { target: { tabId, allFrames: true }, func: completarFormulario120, args: [p.casillas, MAPA_CASILLAS, FORMATO_IMPORTE, p.control || [], true] },
-      (frames) => {
-        void chrome.runtime.lastError;
-        const r = (frames || []).map((f) => f.result).find((x) => x && x.esFormulario);
-        chrome.scripting.executeScript(
-          { target: { tabId }, func: mostrarReferenciaIva, args: [{ ...ref, resultado: r || null }] },
-          () => void chrome.runtime.lastError
-        );
-      }
-    );
-    if (url.pathname.includes('recibirDDJJContribuyente.do')) {
-      chrome.scripting.executeScript(
-        { target: { tabId }, func: seleccionarObligacionIva, args: [ref.anio, ref.mes] },
-        () => void chrome.runtime.lastError
-      );
-    }
-  });
+  if (msg.action === 'IVA_PENDIENTE_LEER') {
+    chrome.storage.session.get([IVA_STORAGE_KEY, DESCARGA_KEY], (data) => {
+      const d = data && data[DESCARGA_KEY];
+      const tabId = sender.tab.id;
+      if (d && (d.tabLista === tabId || d.tabForm === tabId || (d.tabsPropias || []).includes(tabId))) { sendResponse({ ok: false }); return; }
+      const p = data && data[IVA_STORAGE_KEY];
+      if (!p || p.expiresAt < Date.now()) { sendResponse({ ok: false }); return; }
+      sendResponse({ ok: true, casillas: p.casillas, control: p.control || [], ref: referenciaPeriodo(p) });
+    });
+    return true;
+  }
+
+  if (msg.action === 'IVA_RESULTADO') {
+    const r = msg.resultado || {};
+    // El recuadro de referencia va en la ventana principal de esa pestaña.
+    chrome.storage.session.get(IVA_STORAGE_KEY, (data) => {
+      const p = data && data[IVA_STORAGE_KEY];
+      if (!p) return;
+      chrome.tabs.sendMessage(sender.tab.id, { action: 'IVA_MOSTRAR', resultado: r }, { frameId: 0 }).catch(() => {});
+      const n = Array.isArray(r.completadas) ? r.completadas.length : 0;
+      const dif = Array.isArray(r.diferencias) ? r.diferencias.length : 0;
+      publicarAviso('Formulario 120 de ' + (p.nombre || 'el cliente') + ': ' + n + (n === 1 ? ' casilla cargada' : ' casillas cargadas') +
+        (dif ? ', ' + dif + ' con diferencias' : '') + '. Revisalo y presentalo vos.');
+    });
+    sendResponse({ ok: true });
+    return false;
+  }
+  return false;
 });
 
 // "2026-05" -> datos para la referencia: el IVA de mayo se presenta en junio.
@@ -130,46 +135,52 @@ function referenciaPeriodo(p) {
   };
 }
 
-// Espera a que la pestaña salga del login y, en la página de inicio, entra a
-// "Presentar Declaración" (enlace recibirDDJJContribuyente.do, cuyo token
-// _cyp es de la sesión: se toma del propio enlace de la página). Se rinde a
-// los 3 minutos o cuando ya entró. No completa ni presenta nada.
+// Espera a que la pestaña salga del login y, en una página con el menú,
+// entra a «Presentar Declaración» (enlace recibirDDJJContribuyente.do, cuyo
+// token _cyp es de la sesión: se toma del propio enlace). Respeta cómo lo abre
+// Marangatu: si el enlace abre otra ventana se abre otra pestaña (hija de la
+// de trabajo); si no, en la misma. Se rinde a los 3 minutos o cuando ya entró.
+// No completa ni presenta nada (eso lo hace ivaContent.js en el formulario).
 const PRESENTAR_TIMEOUT_MS = 3 * 60 * 1000;
 
 function irAPresentarCuandoEntre(tabId) {
   const limite = Date.now() + PRESENTAR_TIMEOUT_MS;
+  let hecho = false;
+  const intentar = (tab) => {
+    if (hecho) return;
+    if (Date.now() > limite) { chrome.tabs.onUpdated.removeListener(onUpdated); return; }
+    const url = String((tab && tab.url) || '');
+    if (!esUrlMarangatu(url) || url.includes('/login')) return;
+    if (url.includes('recibirDDJJContribuyente.do')) { hecho = true; chrome.tabs.onUpdated.removeListener(onUpdated); return; }
+    chrome.scripting.executeScript({ target: { tabId }, func: buscarPresentarDeclaracion }, (res) => {
+      const enlace = !chrome.runtime.lastError && res && res[0] && res[0].result;
+      if (!enlace || hecho) return;
+      hecho = true;
+      chrome.tabs.onUpdated.removeListener(onUpdated);
+      if (enlace.nueva) chrome.tabs.create({ url: enlace.href, openerTabId: tabId, active: true }).catch(() => {});
+      else chrome.tabs.update(tabId, { url: enlace.href }).catch(() => {});
+    });
+  };
   const onUpdated = (id, info, tab) => {
     if (id !== tabId || info.status !== 'complete') return;
-    if (Date.now() > limite) {
-      chrome.tabs.onUpdated.removeListener(onUpdated);
-      return;
-    }
-    const url = String(tab.url || '');
-    if (url.includes('/login') || url.includes('recibirDDJJContribuyente.do')) {
-      if (url.includes('recibirDDJJContribuyente.do')) chrome.tabs.onUpdated.removeListener(onUpdated);
-      return;
-    }
-    chrome.scripting.executeScript(
-      { target: { tabId }, func: abrirPresentarDeclaracion },
-      (res) => {
-        if (!chrome.runtime.lastError && res && res[0] && res[0].result) {
-          chrome.tabs.onUpdated.removeListener(onUpdated);
-        }
-      }
-    );
+    intentar(tab);
   };
   chrome.tabs.onUpdated.addListener(onUpdated);
+  // Sesión que se mantuvo (mismo cliente): la página ya está cargada.
+  chrome.tabs.get(tabId).then((tab) => { if (tab && tab.status === 'complete') intentar(tab); }).catch(() => {});
 }
 
-// Inyectada en Marangatu: navega (en la misma pestaña) al enlace de
-// "Presentar Declaración" si está en la página. Devuelve si lo encontró.
-function abrirPresentarDeclaracion() {
+// Inyectada en Marangatu: devuelve el enlace de «Presentar Declaración» y si
+// Marangatu lo abre en otra ventana (target, o window.open en su onclick).
+function buscarPresentarDeclaracion() {
   const link = document.querySelector('a[href*="recibirDDJJContribuyente.do"]')
     || [...document.querySelectorAll('a')].find((a) =>
-      /presentar declaraci/i.test(a.title || a.getAttribute('data-tooltip') || ''));
-  if (!link || !link.href) return false;
-  location.href = link.href;
-  return true;
+      /presentar declaraci/i.test(a.title || a.getAttribute('data-tooltip') || a.textContent || ''));
+  if (!link || !link.href || /^javascript:/i.test(link.getAttribute('href') || '')) return null;
+  const destino = (link.getAttribute('target') || '').toLowerCase();
+  const nueva = (destino && destino !== '_self' && destino !== '_top' && destino !== '_parent') ||
+    /window\.open/i.test(link.getAttribute('onclick') || '');
+  return { href: link.href, nueva: !!nueva };
 }
 
 // Sólo números: casilla (1 a 4 dígitos) e importe entero en guaraníes.
@@ -201,29 +212,52 @@ function validarLista(lista, obligatoria) {
   return out;
 }
 
-// Deja UNA pestaña de Marangatu en el acceso, sin sesión previa (sesionBg.js:
-// reutiliza la que exista y cierra la sesión que hubiera), y entra con las
-// credenciales si vienen. despues(tabId): opcional, se llama con la pestaña lista
-// (ej. para seguir hasta "Presentar Declaración" una vez iniciada la sesión).
+// Deja UNA pestaña de Marangatu lista para el cliente (sesionBg.js: reutiliza
+// la que exista; si hay sesión de otro cliente la cierra; si ya es la del
+// mismo cliente la reutiliza) y entra con las credenciales si vienen.
+// despues(tabId): opcional, se llama con la pestaña lista (ej. para seguir
+// hasta «Presentar Declaración»). opciones: { ruc, permitirSesionActiva }.
 // Devuelve { ok, tabId } o { ok: false, error }.
-function abrirLogin(user, pass, despues, opciones) {
+function abrirLogin(user, pass, despues, opciones = {}) {
   return conCandadoDeSesion(async () => {
-    const r = await prepararPestanaLogin(opciones);
+    const rucPedido = String(opciones.ruc || user || '').replace(/\D/g, '');
+    const r = await prepararPestanaLogin({ ...opciones, ruc: rucPedido });
     if (!r.ok) { await publicarAviso(r.error); return r; }
     const tabId = r.tabId;
     if (r.aviso) await publicarAviso(r.aviso);
+    if (r.mismoCliente) {
+      // Misma sesión del cliente: se vuelve al inicio para arrancar de ahí.
+      try { await chrome.tabs.update(tabId, { url: INICIO_URL }); } catch { /* sigue igual */ }
+      await esperarCarga(tabId);
+      await publicarAviso('Se reutiliza la sesión abierta de este cliente en Marangatu.');
+    }
     if (despues) await despues(tabId, r);
     if (user && !r.sesionActiva) {
       // El formulario puede dibujarse tarde: se reintenta unas veces.
       for (let i = 0; i < 6; i += 1) {
         let res = null;
         try { res = await chrome.scripting.executeScript({ target: { tabId }, func: inyectarLogin, args: [user, pass] }); } catch { res = null; }
-        if (res && res[0] && res[0].result) break;
+        if (res && res[0] && res[0].result) {
+          // Se recuerda con qué cliente se entró (sólo el RUC, nunca la clave).
+          await chrome.storage.session.set({ [CLIENTE_KEY]: { ruc: rucPedido, ts: Date.now() } });
+          break;
+        }
         await dormir(400);
       }
     }
-    return { ok: true, tabId, sesionActiva: !!r.sesionActiva };
+    return { ok: true, tabId, sesionActiva: !!r.sesionActiva, mismoCliente: !!r.mismoCliente };
   });
+}
+
+// Espera a que la pestaña termine de cargar (máx. 15 s).
+async function esperarCarga(tabId, ms = 15000) {
+  await dormir(300);
+  const fin = Date.now() + ms;
+  while (Date.now() < fin) {
+    try { const t = await chrome.tabs.get(tabId); if (t.status === 'complete') return true; } catch { return false; }
+    await dormir(250);
+  }
+  return false;
 }
 
 // Chrome informa tanto el origen como la URL de la página remitente. Ambos

@@ -109,6 +109,9 @@
   // ── Escuchar mensajes ─────────────────────────────────────
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (!message || sender.id !== chrome.runtime.id) return false;
+    // Sólo responde a SUS mensajes: si contestara a todos, su respuesta le
+    // ganaría a la del panel (PANEL_LEER_SESION, PANEL_CERRAR_SESION) y la
+    // extensión creería que no hay sesión abierta.
     switch (message.action) {
       case 'INICIAR_DESCARGA_IVA':
         iniciarDescarga(message.state);
@@ -118,9 +121,11 @@
         abrirSiguienteFormularioEnListaTab(message.state);
         break;
 
+      default:
+        return false;
     }
     sendResponse({ ok: true });
-    return true;
+    return false;
   });
 
   // ═══════════════════════════════════════════════════════════
