@@ -207,7 +207,7 @@ Archivos: `src/iva/ivaCore.js` (`periodoFiscalDeHoja`), `src/iva/IvaModule.jsx`,
 | Código | `MJEstudioContable/Control-Total-Clientes-IVA` | este repositorio |
 | App | `https://control-total-clientes.vercel.app` | `https://sistema-mj.vercel.app` |
 | Backend | Apps Script y planillas reales | proyecto `Control Total PRUEBAS` y planillas `PRUEBAS - …` con datos ficticios |
-| Extensión | Ekuatia Login · `dffknnjnidhfldehfalchalikfkjbehm` | Ekuatia Login PRUEBAS · `hljageieeeljncgmbbpmkflpdminodom` |
+| Extensión | Ekuatia Login · `dffknnjnidhfldehfalchalikfkjbehm` | la misma (`Extension/`, ID fijo `dffknnjnidhfldehfalchalikfkjbehm`), que también acepta `https://sistema-mj.vercel.app`. `pruebas/Extension-pruebas` (`hljage…`) queda como alternativa |
 
 ## Armado (una sola vez)
 
@@ -252,7 +252,7 @@ instalador.
 3. **Environment Variables:**
    - `VITE_BACKEND_URL` = URL `…/exec` del Apps Script **de pruebas**
    - `VITE_API_TOKEN` = el `API_TOKEN` **de pruebas**
-   - `VITE_MARANGATU_EXT_ID` = `hljageieeeljncgmbbpmkflpdminodom`
+   - `VITE_MARANGATU_EXT_ID` = `dffknnjnidhfldehfalchalikfkjbehm` (la extensión de `Extension/`)
 4. **Deploy.** Usar siempre la dirección fija, no las de cada deploy.
 
 ### 3. Extensión de pruebas (Chrome)

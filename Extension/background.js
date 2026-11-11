@@ -32,6 +32,8 @@ const MAX_CASILLAS = 120;
 const ALLOWED_APP_ORIGINS = new Set([
   'http://localhost:3000',
   'https://control-total-clientes.vercel.app',
+  // App de pruebas (mismo ID de extensión que la real).
+  'https://sistema-mj.vercel.app',
 ]);
 
 chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
