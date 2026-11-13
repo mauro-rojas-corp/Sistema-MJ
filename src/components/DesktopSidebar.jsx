@@ -1,4 +1,5 @@
 import { BarChart3, Clock, Receipt, UserCog, Users } from 'lucide-react';
+import SitioWebLink from '../estudio/SitioWebLink';
 
 const ITEMS = [
   { id: 'stats', label: 'Estadísticas', description: 'Avance y métricas', Icon: BarChart3 },
@@ -9,7 +10,7 @@ const ITEMS = [
   { id: 'marcaciones', label: 'Marcaciones', description: 'Horas a favor y en contra', Icon: Clock, requiresAssign: true },
 ];
 
-export default function DesktopSidebar({ activeTab, canAssignClients, onChange }) {
+export default function DesktopSidebar({ activeTab, canAssignClients, onChange, sitioWeb }) {
   return (
     <aside className="real-exec-desktop-sidebar" aria-label="Secciones del período">
       <span className="real-exec-sidebar-eyebrow">PERÍODO ACTUAL</span>
@@ -29,6 +30,11 @@ export default function DesktopSidebar({ activeTab, canAssignClients, onChange }
             </button>
           );
         }
+      )}
+      {sitioWeb && (
+        <div className="real-exec-sidebar-foot">
+          <SitioWebLink url={sitioWeb} variante="sidebar" />
+        </div>
       )}
     </aside>
   );

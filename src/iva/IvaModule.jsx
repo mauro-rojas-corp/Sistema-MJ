@@ -12,6 +12,8 @@ import {
   exportPeriodoPDF,
   fechaCorta,
   firma,
+  normalizarSitioWeb,
+  sitioWeb,
   gs,
   lastDigit,
   monthIndexFromSheet,
@@ -29,6 +31,7 @@ import {
   ym,
 } from './ivaCore';
 import './iva.css';
+import { fijarSitioWeb } from '../estudio/sitioWeb';
 
 const IvaEditor = lazy(() => import('./IvaEditor'));
 
@@ -499,7 +502,7 @@ function AjustesView({ config, canEdit, onSave, toast }) {
     return (
       <div className="iva-panel iva-settings">
         <h2>Colores y feriados</h2>
-        <p>Sólo un administrador puede cambiar los colores, los feriados, los valores de mora y el nombre del estudio.</p>
+        <p>Sólo un administrador puede cambiar los colores, los feriados, los valores de mora y el nombre y sitio web del estudio.</p>
       </div>
     );
   }
@@ -565,7 +568,7 @@ function AjustesView({ config, canEdit, onSave, toast }) {
 
       <div className="iva-panel">
         <h2>Nombre del estudio</h2>
-        <p>Aparece en las fichas y en los PDF que se envían a los clientes.</p>
+        <p>El nombre aparece en las fichas y en los PDF que se envían a los clientes. El sitio web es el enlace «Sitio web del estudio» del sistema (menú lateral, Configuración y pantalla de ingreso).</p>
         <div className="iva-morag">
           <div>
             <label htmlFor="iva-firma">Nombre</label>
@@ -576,6 +579,37 @@ function AjustesView({ config, canEdit, onSave, toast }) {
               onBlur={async (e) => {
                 const value = e.target.value.trim();
                 if (value !== firma(config) && await onSave({ ...config, firma: value })) toast('Nombre guardado');
+              }}
+            />
+          </div>
+          <div>
+            <label htmlFor="iva-sitio">Sitio web</label>
+            <input
+              id="iva-sitio"
+              className="left"
+              type="url"
+              inputMode="url"
+              placeholder="https://www.ejemplo.com.py"
+              defaultValue={sitioWeb(config)}
+              onBlur={async (e) => {
+                const texto = e.target.value.trim();
+                const value = texto ? normalizarSitioWeb(texto) : '';
+                if (texto && !value) {
+                  toast('Esa dirección no es válida (ej.: https://www.ejemplo.com.py)');
+                  e.target.value = sitioWeb(config);
+                  return;
+                }
+                const guardar = value || '';
+                if (guardar === (config.sitioWeb || '')) {
+                  e.target.value = sitioWeb(config);
+                  return;
+                }
+                if (await onSave({ ...config, sitioWeb: guardar })) {
+                  const vigente = sitioWeb({ sitioWeb: guardar });
+                  e.target.value = vigente;
+                  fijarSitioWeb(vigente);
+                  toast(guardar ? 'Sitio web guardado' : 'Se usa el sitio web por defecto');
+                }
               }}
             />
           </div>

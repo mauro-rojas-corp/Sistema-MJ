@@ -18,6 +18,7 @@ import {
   X,
 } from 'lucide-react';
 import { api } from '../api';
+import SitioWebLink from '../estudio/SitioWebLink';
 import {
   AMBIENTES,
   AMBIENTE_AUTOMATICA,
@@ -109,6 +110,7 @@ export default function SettingsDialog({
   onThemeChange,
   onFontScaleChange,
   ambiente = null,
+  sitioWeb = '',
 }) {
   const [view, setView] = useState(() => (mustChangePin ? 'pin' : 'main'));
   const [currentPin, setCurrentPin] = useState('');
@@ -390,6 +392,13 @@ export default function SettingsDialog({
 
               {ambiente && <AmbientacionSection ambiente={ambiente} />}
             </section>
+
+            {sitioWeb && (
+              <section className="settings-section">
+                <h3 className="settings-section-title">Estudio</h3>
+                <SitioWebLink url={sitioWeb} variante="settings" />
+              </section>
+            )}
 
             <section className="settings-section">
               <h3 className="settings-section-title">Seguridad</h3>

@@ -42,6 +42,7 @@ original.
 | CAMBIO-5 | Traído de `Jorgeeayala/Sistema-MJ`: actualizar usuarios en «¿Quién sos?» y columnas parejas en la lista de clientes | En prueba | No |
 | CAMBIO-6 | Cada hoja vence el mes siguiente (hoja OCTUBRE → noviembre): ficha, días de retraso y Vencimientos IVA | En prueba | No |
 | CAMBIO-7 | Extensión 2.12: flujo del Formulario 120 (sesión por cliente, cierre de sesión confiable, ventanas como las abre Marangatu, completar al aparecer el formulario) | En prueba | No |
+| CAMBIO-8 | Enlace «Sitio web del estudio» (menú lateral, Configuración, ingreso), editable por un administrador | En prueba | No |
 
 ### CAMBIO-1 · Ficha del cliente y Buzón
 
@@ -239,6 +240,21 @@ sesión» escondido, «Presentar Declaración» en ventana nueva o en la misma,
 formulario en la misma pantalla o en otra ventana, ventana sin menú): cliente
 nuevo, mismo cliente, otro cliente desde una ventana sin menú, sesión
 iniciada a mano y cierre desde la app.
+
+### CAMBIO-8 · Sitio web del estudio
+
+- Enlace discreto «Sitio web del estudio» (se abre en otra pestaña): al pie
+  del menú lateral (PC), en **Configuración → Estudio** (PC y celular) y al
+  pie de la pantalla «¿Quién sos?».
+- Por defecto `https://mj-estudio-contable.lovable.app`. Un administrador lo
+  cambia en **Vencimientos IVA → Colores y feriados → Nombre del estudio →
+  Sitio web** (acepta `www.dominio.com.py`; vacío vuelve al de Lovable). Se
+  guarda en la configuración de IVA (planilla), sin publicar de nuevo ni
+  tocar Apps Script.
+
+Archivos: `src/estudio/` (nuevo), `src/iva/ivaCore.js`, `src/iva/IvaModule.jsx`,
+`src/components/DesktopSidebar.jsx`, `src/components/SettingsDialog.jsx`,
+`src/screens/NamePicker.jsx`, `src/App.jsx`, `src/guia/pasosGuia.jsx`.
 
 ## Las tres piezas separadas
 

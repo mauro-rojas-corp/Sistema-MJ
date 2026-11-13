@@ -26,6 +26,7 @@ import BuzonPanel from './components/BuzonPanel';
 import SugerenciasPanel from './components/SugerenciasPanel';
 import useSugerencias from './hooks/useSugerencias';
 import useAmbiente from './hooks/useAmbiente';
+import { useSitioWeb } from './estudio/sitioWeb';
 import AmbienteIntro from './ambiente/AmbienteIntro';
 import './ambiente/ambiente.css';
 import { AMBIENTE_NINGUNA, resolverAmbiente } from './ambiente/ambientes';
@@ -159,6 +160,8 @@ export default function App({
   const buzon = useAvisos(authenticated && !readOnlyPreview, `${user || ''}|${activeSessionToken}`);
   const initialContentReady = initialScreenReady && authReady;
   const isAdminUser = userRole === 'SUPERUSUARIO' || userRole === 'ADMINISTRADOR';
+  // Página web del estudio (configurable en Vencimientos IVA → Colores y feriados).
+  const sitioWebEstudio = useSitioWeb(authenticated && !readOnlyPreview);
   // Ambientación por época (Navidad, estaciones…): la elige cada usuario.
   const ambienteSessionKey = `${user || ''}|${activeSessionToken}`;
   const ambientePref = useAmbiente(
@@ -1275,6 +1278,7 @@ export default function App({
           user={user}
           authState={authState}
           readOnlyPreview={readOnlyPreview}
+          sitioWebEstudio={sitioWebEstudio}
           PeriodOverviewComponent={PeriodOverviewComponent}
           periodOverviewRef={periodOverviewRef}
           canAssignClients={canAssignClients}
@@ -1323,6 +1327,7 @@ export default function App({
             activeTab={assignClientsOpen ? 'assign' : mobileTab}
             canAssignClients={canAssignClients}
             onChange={handleMobileTabChange}
+            sitioWeb={sitioWebEstudio}
           />
         )}
 
@@ -1355,6 +1360,7 @@ export default function App({
         onChangeUser={handleChangeUser}
         onThemeChange={setTheme}
         onFontScaleChange={setFontScale}
+        sitioWeb={sitioWebEstudio}
         ambiente={
           uiMode === 'executive' && authenticated && !readOnlyPreview
             ? { ambientacion: ambientePref.ambientacion, animacion: ambientePref.animacion, guardar: guardarAmbiente }
@@ -1374,6 +1380,7 @@ function PeriodScreens({
   user,
   authState,
   readOnlyPreview,
+  sitioWebEstudio,
   PeriodOverviewComponent,
   periodOverviewRef,
   canAssignClients,
@@ -1409,7 +1416,7 @@ function PeriodScreens({
     if (!user) {
       return (
         <motion.div key="name-picker" variants={pageVariants} initial="initial" animate="animate" exit="exit">
-          <NamePicker onPick={onPickUser} onReady={onInitialContentReady} />
+          <NamePicker onPick={onPickUser} onReady={onInitialContentReady} sitioWeb={sitioWebEstudio} />
         </motion.div>
       );
     }

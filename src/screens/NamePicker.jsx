@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import { api } from '../api';
 import { STORAGE_KEY_USER } from '../config';
+import SitioWebLink from '../estudio/SitioWebLink';
 import { Users, User, AlertCircle, RefreshCw } from 'lucide-react';
 
 const containerVariants = {
@@ -25,7 +26,7 @@ const itemVariants = {
   },
 };
 
-export default function NamePicker({ onPick, onReady }) {
+export default function NamePicker({ onPick, onReady, sitioWeb = '' }) {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -156,6 +157,11 @@ export default function NamePicker({ onPick, onReady }) {
           </div>
         )}
       </motion.div>
+      {sitioWeb && (
+        <div className="name-picker-foot">
+          <SitioWebLink url={sitioWeb} variante="pie" />
+        </div>
+      )}
     </div>
   );
 }

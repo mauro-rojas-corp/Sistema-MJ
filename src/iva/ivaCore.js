@@ -11,6 +11,9 @@ export const DEFAULT_FERIADOS = ['2026-01-01', '2026-03-01', '2026-04-02', '2026
   '2027-01-01', '2027-03-01', '2027-03-25', '2027-03-26', '2027-05-01', '2027-05-14', '2027-05-15', '2027-06-12', '2027-08-15', '2027-09-29', '2027-12-08', '2027-12-25'];
 export const DEFAULT_MORA = { interes: 0.0005, contrav: 50000 };
 export const DEFAULT_FIRMA = 'MJ Estudio Contable';
+// Página del estudio mientras no tenga dominio propio; se cambia desde
+// Vencimientos IVA → Colores y feriados → Nombre del estudio → Sitio web.
+export const DEFAULT_SITIO_WEB = 'https://mj-estudio-contable.lovable.app';
 // Cada monto guarda `iva`: true = el IVA se extrae del monto (base = m / 1,1);
 // false = el IVA se suma encima (base = m). Los montos viejos guardados como
 // número suelto se interpretan con IVA_DEFAULT (extraído), como siempre.
@@ -120,9 +123,24 @@ export function normalizeConfig(raw) {
     feriados: Array.isArray(c.feriados) ? c.feriados : [...DEFAULT_FERIADOS],
     mora: { ...DEFAULT_MORA, ...(c.mora || {}) },
     firma: c.firma || '',
+    sitioWeb: normalizarSitioWeb(c.sitioWeb),
   };
 }
 export function firma(config) { return (config && config.firma) || DEFAULT_FIRMA; }
+// Dirección web válida (http/https) o '' si no lo es. Acepta «www.x.com».
+export function normalizarSitioWeb(raw) {
+  let v = String(raw || '').trim();
+  if (!v) return '';
+  if (!/^https?:\/\//i.test(v)) v = 'https://' + v;
+  try {
+    const u = new URL(v);
+    if (!/^https?:$/.test(u.protocol) || !u.hostname.includes('.')) return '';
+    return u.href.replace(/\/$/, '');
+  } catch {
+    return '';
+  }
+}
+export function sitioWeb(config) { return (config && normalizarSitioWeb(config.sitioWeb)) || DEFAULT_SITIO_WEB; }
 export function colorFor(config, t) { return (config.colores && config.colores[t]) || DEFAULT_COLORS[t] || '#888'; }
 
 /* ---------- Vencimientos ---------- */

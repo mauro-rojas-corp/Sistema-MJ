@@ -425,6 +425,10 @@ export function construirPasosGuia({ canAssign, isSuper }) {
             En <strong>Ambientación</strong> podés decorar tu panel según la época: Navidad, Año Nuevo,
             Semana Santa, Independencia, San Juan o las estaciones del año (o «Automática», que cambia sola).
           </p>
+          <p>
+            En <strong>Estudio</strong> está el enlace al <strong>sitio web del estudio</strong> (en la PC también
+            al pie del menú lateral).
+          </p>
           {isSuper && (
             <p>
               Como Superusuario, además podés <strong>gestionar usuarios</strong>: dar PIN temporales,
