@@ -52,6 +52,7 @@ export function construirPasosGuia({ canAssign, isSuper }) {
             <li><strong>Estadísticas</strong>: cómo viene el mes.</li>
             <li><strong>Clientes</strong>: la cartera del período y la ficha de cada uno.</li>
             <li><strong>Vencimientos IVA</strong> («IVA» en el celular): liquidaciones y fichas para el cliente.</li>
+            <li><strong>Libros IVA</strong> («Libros» en el celular): compras y ventas importados de SIGA.</li>
             {canAssign && <li><strong>Asignar clientes</strong>: el reparto entre el equipo.</li>}
             {canAssign && <li><strong>Marcaciones</strong> («Horas» en el celular): horas a favor y en contra del personal.</li>}
           </ul>
@@ -322,6 +323,28 @@ export function construirPasosGuia({ canAssign, isSuper }) {
       ),
     },
   ];
+
+  // ── Libros IVA ──────────────────────────────────────────────────────
+  pasos.push({
+    id: 'libros',
+    emoji: '📚',
+    title: 'Libros IVA: compras y ventas',
+    tab: 'libros',
+    target: '.lb-importar',
+    body: (
+      <>
+        <p>
+          Acá se guardan los libros de <strong>compras y ventas</strong> que se exportan de SIGA (Libro Iva
+          Compra/Venta → <strong>Exportar Consulta</strong>).
+        </p>
+        <ul>
+          <li><strong>Importar libro</strong>: elegí el Excel; el sistema detecta si es de compras o ventas, el mes y el año, y te propone el cliente.</li>
+          <li>Antes de guardar compara los totales con la fila TOTAL del archivo.</li>
+          <li>Elegí un cliente y un año para ver qué meses están cargados; abrí uno para ver el detalle, buscar y descargarlo en Excel.</li>
+        </ul>
+      </>
+    ),
+  });
 
   // ── Asignar y Marcaciones (ADMINISTRADOR y SUPERUSUARIO) ─────────────
   if (canAssign) {

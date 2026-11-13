@@ -602,7 +602,23 @@ export const api = {
     guardar: (cambios) => request({ action: 'preferenciasGuardar', ...cambios }),
   },
 
-  // Sugerencias para mejorar el sistema (AppsScript-Sugerencias.gs). Cada
+  // Libros IVA de compras y ventas importados de SIGA (AppsScript-Libros.gs).
+  // guardar() con un libro ya cargado (mismo cliente + mes + tipo) falla con
+  // code LIBRO_EXISTE y error.details.existente; se repite con reemplazar.
+  libros: {
+    listar: async (ruc = '') => {
+      const data = await request({ action: 'librosListar', ruc });
+      return Array.isArray(data.libros) ? data.libros : [];
+    },
+    leer: async (id) => {
+      const data = await request({ action: 'librosLeer', id });
+      return data.libro;
+    },
+    guardar: (libro) => request({ action: 'librosGuardar', ...libro }),
+    eliminar: (id) => request({ action: 'librosEliminar', id }),
+  },
+
+    // Sugerencias para mejorar el sistema (AppsScript-Sugerencias.gs). Cada
   // usuario ve las suyas; ADMINISTRADOR y SUPERUSUARIO ven todas.
   sugerencias: {
     listar: async () => {

@@ -124,6 +124,8 @@ function summarizeIvaDoc(doc) {
 const avisos = [];
 // Sugerencias en memoria (mismo contrato que AppsScript-Sugerencias.gs).
 const sugerencias = [];
+// Libros IVA (mismo contrato que AppsScript-Libros.gs).
+const libros = [];
 // Preferencias por usuario (AppsScript-Preferencias.gs).
 const preferencias = new Map();
 const AMBIENTES_OK = ['ninguna', 'automatica', 'navidad', 'anio-nuevo', 'semana-santa', 'independencia', 'san-juan', 'verano', 'otono', 'invierno', 'primavera'];
@@ -379,6 +381,42 @@ export async function handle(body) {
       if (body.animacion !== undefined) p.animacion = body.animacion === true;
       preferencias.set(session.user, p);
       return { ok: true, ...p };
+    }
+    case 'librosListar': {
+      const ruc = String(body.ruc || '').replace(/\D/g, '');
+      return { ok: true, libros: libros.filter((l) => !ruc || l.ruc === ruc).map(({ datos: _datos, ...l }) => l) };
+    }
+    case 'librosLeer': {
+      const l = libros.find((x) => x.id === body.id);
+      return l ? { ok: true, libro: JSON.parse(JSON.stringify(l)) } : { ok: false, code: 'LIBRO_NO_EXISTE', error: 'No se encontró ese libro' };
+    }
+    case 'librosGuardar': {
+      const tipo = String(body.tipo || '');
+      if (!['compras', 'ventas'].includes(tipo)) return { ok: false, code: 'LIBRO_TIPO', error: 'Tipo de libro no válido' };
+      const ruc = String(body.ruc || '').replace(/\D/g, '');
+      if (!ruc) return { ok: false, code: 'LIBRO_CLIENTE', error: 'Elegí el cliente del libro' };
+      if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(String(body.periodo || ''))) return { ok: false, code: 'LIBRO_PERIODO', error: 'Mes o año no válido' };
+      if (!body.datos || !Array.isArray(body.datos.filas)) return { ok: false, code: 'LIBRO_VACIO', error: 'El libro no tiene comprobantes' };
+      const i = libros.findIndex((l) => l.tipo === tipo && l.ruc === ruc && l.periodo === body.periodo);
+      if (i >= 0 && body.reemplazar !== true) {
+        const { datos: _datos, ...existente } = libros[i];
+        return { ok: false, code: 'LIBRO_EXISTE', error: 'Ya hay un libro cargado para ese cliente y mes', existente };
+      }
+      const libro = {
+        id: i >= 0 ? libros[i].id : `lb-${Math.random().toString(36).slice(2)}`,
+        tipo, ruc, cliente: String(body.cliente || ''), periodo: body.periodo, archivo: String(body.archivo || ''),
+        cantidad: body.datos.filas.length, totales: body.totales || {}, importadoPor: session.user,
+        importadoEl: new Date().toISOString(), datos: { columnas: body.datos.columnas, filas: body.datos.filas, resumen: [] },
+      };
+      if (i >= 0) libros[i] = libro; else libros.push(libro);
+      return { ok: true, id: libro.id, reemplazado: i >= 0 };
+    }
+    case 'librosEliminar': {
+      if (!(session.role === 'ADMINISTRADOR' || session.role === 'SUPERUSUARIO')) return { ok: false, code: 'FORBIDDEN', error: 'Sólo un administrador puede eliminar libros' };
+      const i = libros.findIndex((l) => l.id === body.id);
+      if (i < 0) return { ok: false, code: 'LIBRO_NO_EXISTE', error: 'No se encontró ese libro' };
+      libros.splice(i, 1);
+      return { ok: true };
     }
     case 'sugerenciasCrear': {
       const tipo = String(body.tipo || '').toLowerCase();

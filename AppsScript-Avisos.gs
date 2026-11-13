@@ -369,14 +369,18 @@ function handleRecepcionPintarFila(body, sessionUser) {
 }
 
 function handleAvisosAction(action, body, sessionUser, sessionRole) {
-  // Las sugerencias (AppsScript-Sugerencias.gs) y las preferencias entran por
-  // acá para no tener que tocar doPost otra vez.
+  // Las sugerencias (AppsScript-Sugerencias.gs), las preferencias y los libros
+  // IVA entran por acá para no tener que tocar doPost otra vez.
   if (String(action).indexOf('sugerencias') === 0 && typeof handleSugerenciasAction === 'function') {
     return handleSugerenciasAction(action, body, sessionUser, sessionRole);
   }
   // Preferencias de cada usuario (AppsScript-Preferencias.gs).
   if (String(action).indexOf('preferencias') === 0 && typeof handlePreferenciasAction === 'function') {
     return handlePreferenciasAction(action, body, sessionUser, sessionRole);
+  }
+  // Libros IVA de compras y ventas importados de SIGA (AppsScript-Libros.gs).
+  if (String(action).indexOf('libros') === 0 && typeof handleLibrosAction === 'function') {
+    return handleLibrosAction(action, body, sessionUser, sessionRole);
   }
   const routes = {
     avisosCrear: [function () { return handleAvisosCrear(body, sessionUser); }, 'AVISOS_CREAR_ERROR'],

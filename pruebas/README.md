@@ -43,6 +43,7 @@ original.
 | CAMBIO-6 | Cada hoja vence el mes siguiente (hoja OCTUBRE → noviembre): ficha, días de retraso y Vencimientos IVA | En prueba | No |
 | CAMBIO-7 | Extensión 2.12: flujo del Formulario 120 (sesión por cliente, cierre de sesión confiable, ventanas como las abre Marangatu, completar al aparecer el formulario) | En prueba | No |
 | CAMBIO-8 | Enlace «Sitio web del estudio» (menú lateral, Configuración, ingreso), editable por un administrador | En prueba | No |
+| CAMBIO-9 | Sección «Libros IVA»: importar los libros de compras y ventas de SIGA (Excel/CSV) por cliente y mes, y consultarlos | En prueba | No |
 
 ### CAMBIO-1 · Ficha del cliente y Buzón
 
@@ -255,6 +256,33 @@ iniciada a mano y cierre desde la app.
 Archivos: `src/estudio/` (nuevo), `src/iva/ivaCore.js`, `src/iva/IvaModule.jsx`,
 `src/components/DesktopSidebar.jsx`, `src/components/SettingsDialog.jsx`,
 `src/screens/NamePicker.jsx`, `src/App.jsx`, `src/guia/pasosGuia.jsx`.
+
+### CAMBIO-9 · Libros IVA (compras y ventas de SIGA)
+
+Sección nueva **Libros IVA** («Libros» en el celular), para todos los usuarios.
+- **Importar libro:** el Excel (o CSV) que exporta SIGA desde *Libro Iva
+  Compra/Venta → Exportar Consulta*. Detecta compras o ventas, el mes, el
+  año y el nombre del cliente del archivo, y propone el cliente de la lista
+  (se puede cambiar; avisa si no se parece). Compara los totales leídos con
+  la fila TOTAL del archivo antes de guardar. Un libro por cliente + mes +
+  tipo: si ya existe, avisa quién lo importó y pregunta si reemplazarlo.
+- **Consultar:** cliente + año → los 12 meses con Compras y Ventas (cargado o
+  no); al abrir uno: resumen (gravadas, IVA, exentas, total), detalle con
+  búsqueda por proveedor/cliente, RUC o documento, fila de totales, anulados
+  tachados, cambio Compras ↔ Ventas y descarga en Excel.
+- Eliminar: sólo ADMINISTRADOR y SUPERUSUARIO.
+
+Para probarlo con tu Apps Script:
+1. **+ → Secuencia de comandos** llamada `Libros` y pegá `AppsScript-Libros.gs`.
+2. En `Avisos`, reemplazá todo por el `AppsScript-Avisos.gs` nuevo.
+3. **Implementar → Administrar implementaciones → editar → Nueva versión**.
+   La hoja `Libros IVA` se crea sola (una fila por libro; el detalle va
+   repartido en celdas de hasta 45.000 caracteres).
+
+Archivos: `AppsScript-Libros.gs` (nuevo), `AppsScript-Avisos.gs`,
+`src/libros/` (nuevo), `src/api.js`, `src/App.jsx`,
+`src/components/DesktopSidebar.jsx`, `src/components/MobileTabBar.jsx`,
+`src/guia/pasosGuia.jsx`, `tools/smoke/server.mjs`.
 
 ## Las tres piezas separadas
 

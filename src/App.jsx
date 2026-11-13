@@ -13,6 +13,7 @@ const ClientDetail = lazy(() => import('./screens/ClientDetail'));
 const NewClient = lazy(() => import('./screens/NewClient'));
 const AssignClients = lazy(() => import('./screens/AssignClients'));
 const IvaModule = lazy(() => import('./iva/IvaModule'));
+const LibrosModule = lazy(() => import('./libros/LibrosModule'));
 const MarcacionesModule = lazy(() => import('./marcaciones/MarcacionesModule'));
 // La planilla de marcaciones cargada se descarta al cerrar sesión o cambiar de usuario.
 onPrivateDataCleared(olvidarPlanilla);
@@ -924,7 +925,7 @@ export default function App({
                 <span>Sincronizando…</span>
               </span>
             )}
-            {year && month && !selectedClient && mobileTab !== 'iva' && mobileTab !== 'marcaciones' && (
+            {year && month && !selectedClient && mobileTab !== 'iva' && mobileTab !== 'marcaciones' && mobileTab !== 'libros' && (
               <button
                 type="button"
                 className="real-exec-refresh-button"
@@ -1526,6 +1527,14 @@ function PeriodScreens({
       return (
         <motion.div key={`marcaciones-${year}-${month}`} variants={pageVariants} initial="initial" animate="animate" exit="exit">
           <MarcacionesModule withDesktopSidebar={!isMobilePeriodNav} />
+        </motion.div>
+      );
+    }
+
+    if (usePeriodTabs && mobileTab === 'libros') {
+      return (
+        <motion.div key={`libros-${year}-${month}`} variants={pageVariants} initial="initial" animate="animate" exit="exit">
+          <LibrosModule withDesktopSidebar={!isMobilePeriodNav} />
         </motion.div>
       );
     }
