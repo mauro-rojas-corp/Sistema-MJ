@@ -580,3 +580,5 @@ Es la primera etapa del plan para cargar distintos tipos de documento. Cada comp
 - **Prueba hecha:**
   - Con una extensión simulada (3 facturas, una cada 4 s, la tercera falla): aparecen 1, después 2, se ve el captcha en curso y al final el motivo del fallo.
   - Con la extensión real en Chrome sin pantalla: un trabajo que quedó «corriendo» de un worker anterior se informa como interrumpido y no bloquea uno nuevo.
+
+**Ajuste (20/11):** si el Apps Script publicado es anterior al CAMBIO-18 y no tiene `comprobantesImportar`, la app guarda igual. Pasa los comprobantes de a uno con `comprobantesGuardar` y cuenta los repetidos («N ya estaban»). Esto vale para «Subir documentos», «Pasar a Comprobantes» y Libros IVA. Antes mostraba «El backend todavía no tiene la importación». En el servidor de prueba se simula con `SIN_IMPORTAR=1`. Probado: la primera carga guarda 3 y la segunda avisa «3 ya estaban».

@@ -116,7 +116,7 @@ export default function LeerDocumentos({ clientes, preferido, estudio, onCerrar,
       onGuardado({ afectados: [...afectados.values()], agregados, repetidos, rucs: [...porCliente.keys()] });
     } catch (e) {
       setError(e.code === 'UNKNOWN_ACTION'
-        ? 'El backend todavía no tiene la importación: pegá el AppsScript-Comprobantes.gs nuevo y publicá una nueva versión.'
+        ? 'El Apps Script publicado no tiene el registro de comprobantes: pegá AppsScript-Comprobantes.gs y el AppsScript-Avisos.gs nuevos y publicá una nueva versión.'
         : e.message || 'No se pudo guardar.');
       setGuardando(false);
     }

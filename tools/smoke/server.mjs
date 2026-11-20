@@ -548,6 +548,8 @@ export async function handle(body) {
     case 'cdcObtenerItems':
       return { ok: true, loteId: body.loteId, items: ['01800281163001001000123412024011511234567890', '01800281163001001000123512024011511234567891', '01800281163001001000123612024011511234567892'].map((cdc) => ({ cdc, estado: 'pendiente', tieneXml: false })) };
     case 'comprobantesImportar': {
+      // SIN_IMPORTAR=1 simula un Apps Script anterior al CAMBIO-18.
+      if (process.env.SIN_IMPORTAR) return { ok: false, code: 'UNKNOWN_ACTION', error: `Acción desconocida: ${action}` };
       const ruc = String(body.ruc || '').replace(/\D/g, '');
       if (!ruc) return { ok: false, code: 'COMPROBANTES_DATOS', error: 'Elegí el cliente' };
       const clave = (x) => [x.op, x.tipo, x.numero, x.timbrado || '', String(x.ruc || '').replace(/\D/g, '')].join('|');

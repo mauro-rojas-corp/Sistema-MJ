@@ -630,7 +630,33 @@ export const api = {
     },
     guardar: (datos) => request({ action: 'comprobantesGuardar', ...datos }),
     eliminar: (ruc, periodo, id) => request({ action: 'comprobantesEliminar', ruc, periodo, id }),
-    importar: (ruc, cliente, comprobantes) => request({ action: 'comprobantesImportar', ruc, cliente, comprobantes }),
+    // Guarda varios de una vez. Si el Apps Script publicado es anterior y no
+    // tiene esta acción, los guarda de a uno (comprobantesGuardar), contando
+    // los repetidos igual que la importación en bloque.
+    importar: async (ruc, cliente, comprobantes) => {
+      try {
+        return await request({ action: 'comprobantesImportar', ruc, cliente, comprobantes });
+      } catch (e) {
+        if (e.code !== 'UNKNOWN_ACTION') throw e;
+      }
+      let agregados = 0;
+      let repetidos = 0;
+      let invalidos = 0;
+      const meses = new Map();
+      for (const c of comprobantes) {
+        try {
+          const r = await request({ action: 'comprobantesGuardar', ruc, cliente, comprobante: c });
+          agregados += 1;
+          const p = r.periodo || String(c.fecha || '').slice(0, 7);
+          meses.set(p, (meses.get(p) || 0) + 1);
+        } catch (e) {
+          if (e.code === 'COMPROBANTE_DUPLICADO') repetidos += 1;
+          else if (e.code === 'COMPROBANTE_FECHA' || e.code === 'COMPROBANTE_VACIO') invalidos += 1;
+          else throw e;
+        }
+      }
+      return { ok: true, agregados, repetidos, invalidos, meses: [...meses].map(([periodo, n]) => ({ periodo, agregados: n })), deAUno: true };
+    },
   },
   libros: {
     listar: async (ruc = '') => {
