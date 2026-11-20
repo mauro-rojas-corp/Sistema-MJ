@@ -26,6 +26,10 @@ Puente exclusivo entre **Control Clientes** y Marangatu. Hace tres cosas:
    pestaña propia y abre el diálogo de impresión: hay que elegir **Guardar como
    PDF**. Los archivos se llaman `{PREFIJO}_{AÑO}_{MES}_{RUC}.pdf`.
 
+## Novedades 2.23
+
+- Descarga directa de XML: la app muestra cada factura apenas se baja y el paso en curso (captcha con segundos); si Chrome detiene la extensión a mitad de una descarga, se informa como interrumpida en vez de quedar «en curso».
+
 ## Instalar
 
 1. Abrí `chrome://extensions` (o `edge://extensions`).

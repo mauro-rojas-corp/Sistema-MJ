@@ -82,10 +82,11 @@ async function dirLeerSaldo(clientKey) {
   }
 }
 
-async function dirEsperarTareaToken(clientKey, taskId, creadoEn, timeoutMs = 120000) {
+async function dirEsperarTareaToken(clientKey, taskId, creadoEn, timeoutMs = 120000, etiqueta = '') {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     await dirSleep(2000);
+    if (etiqueta) await dirMarcar('token', `${etiqueta} (${Math.round((Date.now() - creadoEn) / 1000)} s)`);
     const r = await dirSolverPost('getTaskResult', { clientKey, taskId });
     if (r.status === 'ready' && r.solution && r.solution.gRecaptchaResponse) {
       const listoEn = Date.now();
@@ -106,7 +107,7 @@ async function dirEsperarTareaToken(clientKey, taskId, creadoEn, timeoutMs = 120
 
 // Crea UNA tarea de captcha y espera su token. Cuenta el pedido en las
 // métricas de la corrida; quien llama decide cómo contar el resultado.
-async function dirResolverToken(clientKey, metricas, timeoutMs = 120000) {
+async function dirResolverToken(clientKey, metricas, timeoutMs = 120000, etiqueta = '') {
   const creadoEn = Date.now();
   if (metricas) metricas.tokensPedidos += 1;
   const creada = await dirSolverPost('createTask', {
@@ -118,11 +119,11 @@ async function dirResolverToken(clientKey, metricas, timeoutMs = 120000) {
     },
   });
   if (!creada.taskId) throw new Error('El servicio de captcha no devolvió taskId.');
-  return dirEsperarTareaToken(clientKey, creada.taskId, creadoEn, timeoutMs);
+  return dirEsperarTareaToken(clientKey, creada.taskId, creadoEn, timeoutMs, etiqueta);
 }
 
-async function dirPedirToken(clientKey, metricas, timeoutMs = 120000) {
-  const info = await dirResolverToken(clientKey, metricas, timeoutMs);
+async function dirPedirToken(clientKey, metricas, timeoutMs = 120000, etiqueta = '') {
+  const info = await dirResolverToken(clientKey, metricas, timeoutMs, etiqueta);
   if (metricas) metricas.tokensListos += 1;
   return info.token;
 }
@@ -201,13 +202,13 @@ async function dirConsultarYDescargar(cdc, clientKey, metricas) {
   await dirMarcar('token', `pidiendo token para …${cdc.slice(-6)}`);
   let token;
   try {
-    token = await dirPedirToken(clientKey, metricas);
+    token = await dirPedirToken(clientKey, metricas, 120000, `resolviendo el captcha para …${cdc.slice(-6)}`);
   } catch (errToken) {
     // Un intento más de token antes de dar el CDC por fallido.
     if (metricas) metricas.tokensFallidos += 1;
     await dirMarcar('token', `reintentando token para …${cdc.slice(-6)}`);
     try {
-      token = await dirPedirToken(clientKey, metricas);
+      token = await dirPedirToken(clientKey, metricas, 120000, `reintentando el captcha para …${cdc.slice(-6)}`);
     } catch (errToken2) {
       if (metricas) metricas.tokensFallidos += 1;
       throw errToken2;
@@ -367,7 +368,13 @@ async function dirLeerTrabajo() {
   }
 }
 
+// true sólo mientras este service worker está corriendo una descarga. Si
+// Chrome reinició el worker a mitad de camino, el trabajo guardado dice
+// «corriendo» pero ya no avanza: el estado lo informa como interrumpido.
+let dirEnCurso = false;
+
 async function dirCorrerTrabajo(cdcs, clientKey, perfilNombre) {
+  dirEnCurso = true;
   dirLatidoStart();
   const perfil = DIR_PERFILES[perfilNombre] || DIR_PERFILES.actual;
   const trabajo = {
@@ -454,6 +461,7 @@ async function dirCorrerTrabajo(cdcs, clientKey, perfilNombre) {
     await dirRegistrarEnHistorial(trabajo);
     await dirMarcar('listo', `descarga directa terminada (${trabajo.perfilEtiqueta})`);
     dirLatidoStop();
+    dirEnCurso = false;
   }
 }
 
@@ -469,8 +477,16 @@ chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
   (async () => {
     if (msg.action === 'APP_CDC_DIR_ESTADO') {
       const t = await dirLeerTrabajo();
+      let interrumpido = false;
+      if (t && t.corriendo && !dirEnCurso) {
+        t.corriendo = false;
+        t.interrumpido = true;
+        await dirGuardarTrabajo(t);
+        interrumpido = true;
+      }
+      const e = (await chrome.storage.local.get(DIR_ESTADO_KEY))[DIR_ESTADO_KEY] || {};
       sendResponse(t
-        ? { ok: true, corriendo: !!t.corriendo, hechos: t.hechos || 0, total: t.total || 0 }
+        ? { ok: true, corriendo: !!t.corriendo, hechos: t.hechos || 0, total: t.total || 0, interrumpido: interrumpido || !!t.interrumpido, paso: e.paso || '', detalle: e.detalle || '', perfil: t.perfil || '' }
         : { ok: true, corriendo: false, hechos: 0, total: 0 });
       return;
     }
@@ -486,7 +502,7 @@ chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
       return;
     }
     const previo = await dirLeerTrabajo();
-    if (previo?.corriendo) {
+    if (previo?.corriendo && dirEnCurso) {
       sendResponse({ ok: false, error: 'Ya hay una descarga directa en curso.' });
       return;
     }

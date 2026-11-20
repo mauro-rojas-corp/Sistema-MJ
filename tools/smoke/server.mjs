@@ -542,6 +542,11 @@ export async function handle(body) {
         observaciones: n.includes('borrosa') ? 'Número parcialmente ilegible' : '',
       }] };
     }
+    // Lotes CDC (sólo lo que usa la pestaña XML / KuDE para la descarga directa).
+    case 'cdcListarLotes':
+      return { ok: true, lotes: [{ loteId: 'CDC-PRUEBA-0001', estado: 'en_cola', totalItems: 3, descargados: 0, creado: new Date().toISOString() }] };
+    case 'cdcObtenerItems':
+      return { ok: true, loteId: body.loteId, items: ['01800281163001001000123412024011511234567890', '01800281163001001000123512024011511234567891', '01800281163001001000123612024011511234567892'].map((cdc) => ({ cdc, estado: 'pendiente', tieneXml: false })) };
     case 'comprobantesImportar': {
       const ruc = String(body.ruc || '').replace(/\D/g, '');
       if (!ruc) return { ok: false, code: 'COMPROBANTES_DATOS', error: 'Elegí el cliente' };

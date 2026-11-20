@@ -53,6 +53,7 @@ original.
 | CAMBIO-19 | Traído de `Jorgeeayala/Sistema-MJ`: pestaña «XML / KuDE», lotes CDC y descarga directa de XML; extensión 2.15 (en los commits figura como CAMBIO-15) | En prueba (backend CDC nuevo: `AppsScript-CdcLotes.gs`) | No |
 | CAMBIO-20 | «Subir documentos»: lectura con Claude de PDF, fotos y planillas de cualquier formato → revisión → registro; aviso para aceptar o rechazar cuando cambia un IVA ya cargado (también al importar libros); se quita «Cargar detalle de comprobantes» del IVA | En prueba | No |
 | CAMBIO-21 | Unión con `MJBackendPy/Sistema-Mj` (XML / KuDE, lotes CDC, buscador, extensión 2.15) y lector XML SIFEN integrado en «Subir documentos» y en la pestaña XML («Pasar a Comprobantes») | En prueba | No |
+| CAMBIO-22 | Descarga directa de XML: cada factura aparece apenas se baja, se ve el paso en curso (captcha con segundos), motivo de los fallos y aviso si la descarga se cortó; extensión 2.23 | En prueba | No |
 
 ### CAMBIO-1 · Ficha del cliente y Buzón
 
@@ -560,3 +561,22 @@ Es la primera etapa del plan para cargar distintos tipos de documento. Cada comp
   - Con `factura-prueba.xml`: Gs. 131.000, 110.000 al 10% y 21.000 al 5%, timbrado 17234567, fecha 15/01/2024, por los dos caminos. Al subirla de nuevo, detecta «1 ya estaban».
   - Se repitió la prueba completa de CAMBIO-20 (subir, revisar, aviso y aceptar), sin errores.
 - **Para el backend real:** pegar también `AppsScript-CdcLotes.gs` si todavía no está en el proyecto de Apps Script. El `AppsScript-Avisos.gs` de este repositorio ya deriva `cdc*`, `lectura*` y `comprobantes*`.
+
+### CAMBIO-22 · Descarga directa de XML más clara (extensión 2.23)
+
+- **El problema:** con la descarga directa, la app no mostraba ninguna factura hasta que terminaban todas. Cada factura espera un captcha que resuelve un servicio externo, de a una, con hasta 120 s por intento y un reintento. Con el servicio lento parecía trabado.
+- **Ahora:**
+  - **Cada XML aparece en la lista apenas la extensión lo baja**, aunque falten otros.
+  - Debajo de la barra se ve **qué está haciendo**, por ejemplo «Ahora: resolviendo el captcha para …567891 (45 s)».
+  - Al terminar se muestra el **motivo** de los que fallaron, por ejemplo «El token de captcha no estuvo listo en 120 s».
+  - Si Chrome detiene la extensión a mitad de camino, el estado sale como **interrumpido**: la app avisa y deja volver a empezar (solo baja lo que falta), en vez de quedar «Descargando…» para siempre.
+- **El ritmo no se cambió:** sigue de a una, el modo «Actual (seguro)» del popup. En **Descargas → Ritmo** se puede elegir **«Prudente rápido (3 tokens)»**: resuelve 3 captchas en paralelo y las consultas a eKuatia siguen de a una, con pausa.
+- **Archivos:**
+  - `Extension/descargaDirectaBg.js`: estado con `paso`, `detalle` e `interrumpido`, y segundos de espera del captcha.
+  - `Extension/manifest.json`: versión 2.23.
+  - `src/xml/XmlToolModule.jsx`: muestra incremental, detalle y motivos.
+  - `tools/smoke/server.mjs`: lotes CDC mínimos para probar.
+  - Se regeneró `pruebas/Extension-pruebas`.
+- **Prueba hecha:**
+  - Con una extensión simulada (3 facturas, una cada 4 s, la tercera falla): aparecen 1, después 2, se ve el captcha en curso y al final el motivo del fallo.
+  - Con la extensión real en Chrome sin pantalla: un trabajo que quedó «corriendo» de un worker anterior se informa como interrumpido y no bloquea uno nuevo.

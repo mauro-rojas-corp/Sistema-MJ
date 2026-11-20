@@ -428,17 +428,32 @@ export default function XmlToolModule({ withDesktopSidebar = false }) {
       if (!inicio?.ok) throw new Error(mensajeDeError(inicio?.error) || 'La extensión no aceptó el trabajo.');
       setDirecta({ hechos: 0, total: cdcsParaBajar.length });
       cdcs = cdcsParaBajar;
+      // Cada XML se muestra apenas la extensión lo baja (no al final).
+      const yaMostrados = new Set();
+      const mostrarNuevos = (resultados) => {
+        const nuevos = (resultados || [])
+          .filter((r) => r.ok && r.xml && !yaMostrados.has(r.cdc))
+          .map((r) => { yaMostrados.add(r.cdc); return { name: `${r.cdc}.xml`, content: r.xml }; });
+        if (nuevos.length) procesarTextos(nuevos);
+      };
+      let interrumpido = false;
       for (;;) {
         await new Promise((r) => setTimeout(r, 2500));
         const estado = await descargarDirectoEstado();
         if (!estado?.ok) throw new Error('Se perdió contacto con la extensión durante la descarga.');
-        setDirecta({ hechos: estado.hechos || 0, total: estado.total || cdcs.length });
-        if (!estado.corriendo) break;
+        setDirecta({ hechos: estado.hechos || 0, total: estado.total || cdcs.length, detalle: estado.corriendo ? estado.detalle || '' : '' });
+        if (estado.hechos > yaMostrados.size) {
+          const parcial = await descargarDirectoResultados();
+          mostrarNuevos(parcial && parcial.resultados);
+        }
+        if (!estado.corriendo) { interrumpido = !!estado.interrumpido; break; }
       }
       const { resultados } = await descargarDirectoResultados();
+      mostrarNuevos(resultados);
       const textos = [...textosPrevios, ...(resultados || [])
         .filter((r) => r.ok && r.xml)
         .map((r) => ({ name: `${r.cdc}.xml`, content: r.xml }))];
+      if (textosPrevios.length) procesarTextos(textosPrevios);
       const fallidos = (resultados || []).filter((r) => !r.ok).length;
       const duracionSeg = (performance.now() - t0Directa) / 1000;
       const okItems = (resultados || []).filter((r) => r.ok);
@@ -446,9 +461,13 @@ export default function XmlToolModule({ withDesktopSidebar = false }) {
       setDirectaResumen({ duracionSeg, sumaSeg, items: resultados || [] });
       const okCant = textos.length;
       const notas = [`Descarga directa por la extensión: ${okCant} XML (descarga efectiva ${sumaSeg.toFixed(0)} s${okCant ? `, ${(sumaSeg / okCant).toFixed(1)} s por factura` : ''}; corrida total ${duracionSeg.toFixed(0)} s).`];
-      if (fallidos > 0) notas.push(`${fallidos} CDC(s) no se pudieron descargar directo.`);
+      if (fallidos > 0) {
+        const motivos = [...new Set((resultados || []).filter((r) => !r.ok).map((r) => r.error).filter(Boolean))].slice(0, 2);
+        notas.push(`${fallidos} CDC(s) no se pudieron descargar directo${motivos.length ? ` (${motivos.join(' · ')})` : ''}.`);
+      }
+      if (interrumpido) notas.push('La descarga se cortó a mitad de camino (Chrome detuvo la extensión). Tocá «Descarga directa» de nuevo: sólo baja lo que falta.');
       if (textosPrevios.length > 0) notas.push(`${textosPrevios.length} factura(s) venían de la sesión local (sin tokens).`);
-      informarCarga(procesarTextos(textos), notas);
+      informarCarga({ cargados: textos.length, duplicados: 0, rechazados: [] }, notas);
     } catch (err) {
       setError(err?.message || 'No se pudo completar la descarga directa.');
     } finally {
@@ -611,7 +630,7 @@ export default function XmlToolModule({ withDesktopSidebar = false }) {
               <div className="xml-progreso-bar">
                 <div style={{ width: `${directa.total ? Math.min(100, Math.round(100 * directa.hechos / Math.max(1, directa.total))) : 4}%` }} />
               </div>
-              <small>La extensión está bajando los XML de eKuatia. Dejá esta pestaña abierta.</small>
+              <small>{directa.detalle ? `Ahora: ${directa.detalle}. ` : ''}Cada factura aparece abajo apenas se descarga. Dejá esta pestaña abierta.</small>
             </div>
           ) : loteSelObj && (
             <div className="xml-progreso" role="status">
