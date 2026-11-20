@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { AlertTriangle, CheckCircle2, FileUp, Pencil, RefreshCw, Sparkles, Trash2, X } from 'lucide-react';
 import { api } from '../api';
 import { gs } from '../iva/ivaCore.js';
@@ -14,7 +14,8 @@ import { ACEPTA, documentoAComprobante, localAComprobantes, prepararArchivo, pro
 const fechaCorta = (f) => (f ? f.split('-').reverse().join('/') : '—');
 let secuencia = 0;
 
-export default function LeerDocumentos({ clientes, preferido, estudio, onCerrar, onGuardado }) {
+// archivosIniciales: File[] para leer apenas se abre (p. ej. desde XML / KuDE).
+export default function LeerDocumentos({ clientes, preferido, estudio, onCerrar, onGuardado, archivosIniciales = null }) {
   const [archivos, setArchivos] = useState([]); // { id, nombre, estado, error, origen }
   const [items, setItems] = useState([]); // { id, archivo, ruc, comprobante, avisos, incluir }
   const [leyendo, setLeyendo] = useState(false);
@@ -41,6 +42,9 @@ export default function LeerDocumentos({ clientes, preferido, estudio, onCerrar,
         if (prep.local) {
           leidos = localAComprobantes(prep.local, { clientes, preferido });
           origen = prep.local.origen;
+        } else if (prep.docs) {
+          leidos = prep.docs.map((d) => documentoAComprobante(d, { clientes, preferido, rucEstudio: estudio && estudio.ruc }));
+          origen = prep.origen + (prep.descartados ? ` · ${prep.descartados} sin montos (remisión) no se cargan` : '');
         } else {
           const r = await api.lectura.documento({ ...prep.ia, contexto });
           leidos = (r.documentos || []).map((d) => documentoAComprobante(d, { clientes, preferido, rucEstudio: estudio && estudio.ruc }));
@@ -58,6 +62,13 @@ export default function LeerDocumentos({ clientes, preferido, estudio, onCerrar,
     }
     setLeyendo(false);
   };
+
+  const inicialLeido = useRef(false);
+  useEffect(() => {
+    if (inicialLeido.current || !archivosIniciales || !archivosIniciales.length) return;
+    inicialLeido.current = true;
+    leer(archivosIniciales);
+  }); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Revisión: errores bloquean el guardado de ese ítem; avisos sólo marcan.
   const revisados = useMemo(() => items.map((it) => {
@@ -130,11 +141,11 @@ export default function LeerDocumentos({ clientes, preferido, estudio, onCerrar,
           >
             <FileUp size={items.length ? 20 : 34} aria-hidden="true" />
             <strong>{items.length ? 'Agregar más archivos' : 'Elegí o arrastrá los documentos'}</strong>
-            {!items.length && <span>Facturas, notas de crédito y recibos en PDF o foto, planillas Excel/CSV de cualquier sistema, el detalle de Marangatu. Podés subir varios a la vez.</span>}
+            {!items.length && <span>Facturas, notas de crédito y recibos en PDF, foto o XML de factura electrónica, planillas Excel/CSV de cualquier sistema, el detalle de Marangatu. Podés subir varios a la vez.</span>}
             <input type="file" multiple accept={ACEPTA} onChange={(e) => { leer(e.target.files || []); e.target.value = ''; }} disabled={ocupado} />
           </label>
           {!items.length && !archivos.length && (
-            <p className="lb-ayuda">Lo que no sea un formato conocido lo lee Claude. Nada se guarda hasta que lo revises y toques «Guardar».</p>
+            <p className="lb-ayuda">El XML de factura electrónica y el detalle de Marangatu se leen directo; lo demás lo lee Claude. Nada se guarda hasta que lo revises y toques «Guardar».</p>
           )}
 
           {archivos.length > 0 && (

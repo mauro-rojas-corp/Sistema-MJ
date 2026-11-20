@@ -246,3 +246,13 @@
   border: 1px dashed var(--rx-line); border-radius: 10px; padding: 8px 12px;
   color: var(--rx-muted); font-size: var(--rx-fs-xs); margin: 0 0 12px;
 }
+
+/* «Pasar a Comprobantes»: en su propia línea, debajo del título. */
+.xml-list-head {
+  flex-wrap: wrap;
+}
+.xml-list-head .xml-al-registro {
+  order: 3;
+  flex: 1 1 100%;
+  justify-content: center;
+}

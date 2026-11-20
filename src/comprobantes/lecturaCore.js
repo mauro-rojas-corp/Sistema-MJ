@@ -73,7 +73,20 @@ export async function prepararArchivo(file) {
     if (texto.length > 180000) throw new Error('La planilla es muy grande para leerla de una vez: dividila en partes (por mes, por ejemplo).');
     return { ia: { nombre: file.name, texto } };
   }
-  if (['txt', 'xml'].includes(e)) {
+  if (e === 'xml' || tipo.includes('xml')) {
+    const texto = await file.text();
+    // Factura electrónica SIFEN (también lotes): se lee con el lector de la
+    // pestaña XML / KuDE, exacto y sin costo. Otro XML va a Claude.
+    if (/<(\w+:)?rDE[\s>]|<(\w+:)?DE[\s>]|ekuatia\.set\.gov\.py/.test(texto)) {
+      const { parseXmlToKudeMultiple } = await import('../xml/utils/xmlParser');
+      const kudes = parseXmlToKudeMultiple(texto, file.name);
+      const docs = kudes.map(kudeADocumento).filter(Boolean);
+      if (docs.length) return { docs, origen: 'Factura electrónica (XML SIFEN)', descartados: kudes.length - docs.length };
+    }
+    if (texto.length > 180000) throw new Error('El archivo es muy grande para leerlo de una vez.');
+    return { ia: { nombre: file.name, texto } };
+  }
+  if (e === 'txt') {
     const texto = await file.text();
     if (texto.length > 180000) throw new Error('El archivo es muy grande para leerlo de una vez.');
     return { ia: { nombre: file.name, texto } };
@@ -86,6 +99,51 @@ export async function prepararArchivo(file) {
     return { ia: { nombre: file.name, tipo: 'image/jpeg', base64: await imagenAJpeg(file) } };
   }
   throw new Error('Ese tipo de archivo no se puede leer. Usá PDF, foto (JPG/PNG), Excel o CSV.');
+}
+
+// Documento de la pestaña XML / KuDE (xmlParser) → mismo formato que
+// devuelve la lectura con Claude. Las notas de remisión no llevan montos
+// fiscales y se descartan.
+// El lector de XML da la fecha como «DD/MM/AAAA HH:mm:ss».
+function fechaKude(v) {
+  const s = String(v || '').trim();
+  const m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+  if (m) return `${m[3]}-${m[2]}-${m[1]}`;
+  return /^\d{4}-\d{2}-\d{2}/.test(s) ? s.slice(0, 10) : '';
+}
+const CLASE_SIFEN = { 1: 'factura', 4: 'autofactura', 5: 'nota_credito', 6: 'nota_debito' };
+export function kudeADocumento(k) {
+  const clase = CLASE_SIFEN[k.tipoDocumentoCodigo];
+  if (!clase) return null;
+  const t = k.totales || {};
+  const ruc = (r, dv) => (r ? `${String(r).trim()}${dv ? '-' + String(dv).trim() : ''}` : '');
+  return {
+    clase,
+    fecha: fechaKude(k.fechaEmision),
+    numero: k.numeroCompleto || '',
+    timbrado: String(k.timbradoNumero || '').replace(/\D/g, ''),
+    cdc: String(k.cdc || '').replace(/\D/g, ''),
+    condicion: /cr[eé]dito/i.test(k.condicionVenta || '') ? 'credito' : 'contado',
+    moneda: t.moneda === 'USD' ? 'USD' : 'PYG',
+    cambio: Number(t.tipoCambio) || 0,
+    emisor_ruc: ruc(k.emisor && k.emisor.ruc, k.emisor && k.emisor.dv),
+    emisor_nombre: (k.emisor && k.emisor.razonSocial) || '',
+    receptor_ruc: k.receptor ? (ruc(k.receptor.ruc, k.receptor.dv) || k.receptor.numeroDocumento || '') : '',
+    receptor_nombre: (k.receptor && k.receptor.razonSocial) || '',
+    gravado10: Number(t.subtotal10) || 0,
+    gravado5: Number(t.subtotal5) || 0,
+    exento: Number(t.subtotalExento) || 0,
+    iva10: Number(t.totalIva10) || 0,
+    iva5: Number(t.totalIva5) || 0,
+    total: Number(t.totalPagar) || 0,
+    monto: 0,
+    concepto: '',
+    facturas: '',
+    forma_pago: '',
+    comprobante_asociado: '',
+    confianza: k.parseErrors && k.parseErrors.length ? 'media' : 'alta',
+    observaciones: (k.parseErrors || []).join(' '),
+  };
 }
 
 const conDv = (r) => {

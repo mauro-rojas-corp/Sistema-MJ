@@ -52,6 +52,7 @@ original.
 | CAMBIO-18 | Importar el «Detalle de comprobantes registrados» de Marangatu (RG 90): al registro de Comprobantes (todos, sin duplicar) y en Libros IVA | En prueba | No |
 | CAMBIO-19 | Traído de `Jorgeeayala/Sistema-MJ`: pestaña «XML / KuDE», lotes CDC y descarga directa de XML; extensión 2.15 (en los commits figura como CAMBIO-15) | En prueba (backend CDC nuevo: `AppsScript-CdcLotes.gs`) | No |
 | CAMBIO-20 | «Subir documentos»: lectura con Claude de PDF, fotos y planillas de cualquier formato → revisión → registro; aviso para aceptar o rechazar cuando cambia un IVA ya cargado (también al importar libros); se quita «Cargar detalle de comprobantes» del IVA | En prueba | No |
+| CAMBIO-21 | Unión con `MJBackendPy/Sistema-Mj` (XML / KuDE, lotes CDC, buscador, extensión 2.15) y lector XML SIFEN integrado en «Subir documentos» y en la pestaña XML («Pasar a Comprobantes») | En prueba | No |
 
 ### CAMBIO-1 · Ficha del cliente y Buzón
 
@@ -535,3 +536,27 @@ Es la primera etapa del plan para cargar distintos tipos de documento. Cada comp
   - Importación de un libro con aviso.
   - Simulador del Apps Script de lectura (8/8).
   - **Pendiente:** la lectura real con Claude, que se prueba una vez pegado el backend.
+
+### CAMBIO-21 · Unión con MJBackendPy/Sistema-Mj y lectura de XML de factura electrónica
+
+- **Unión del repositorio:** se trajo `MJBackendPy/Sistema-Mj` (ZIP de `main` del 20/11/2026). Ese repositorio partió de esta copia en el CAMBIO-18. Se unió con un merge de tres vías: lo de allá, más lo de acá (CAMBIO-20, lectura con Claude).
+  - **Lo que trajo:**
+    - pestaña **XML / KuDE** (`src/xml/`);
+    - **lotes CDC** (`src/cdc/` y `AppsScript-CdcLotes.gs`);
+    - buscador de Marangatu (`src/components/BuscadorMarangatu.jsx`);
+    - `SettingsHost.jsx`;
+    - extensión con asistente, recolector de CDC y descarga directa;
+    - `tsconfig.json`, `tools/medir-configuracion.js` y la factura de ejemplo `pruebas/xml-kude/factura-prueba.xml` (datos ficticios).
+  - **Lo que se borró allá y se acepta:** `metadata.json` (resto de AI Studio, sin uso) y `pruebas/Extension-pruebas/logo.png`.
+  - **Conflictos:** solo en el registro, el generador del backend (se incluyen los dos módulos nuevos, Lectura y CdcLotes) y el backend combinado (regenerado).
+  - Su «CAMBIO-19» (XML / KuDE) conserva el número; la lectura con Claude pasa a **CAMBIO-20**.
+  - Hay dependencias nuevas, así que hace falta `npm install`. Vercel lo hace solo.
+- **Lector XML unificado:**
+  - En **Comprobantes → Subir documentos**, los **XML de factura electrónica SIFEN** (también los lotes con varias) se leen con el lector de la pestaña XML (`parseXmlToKudeMultiple`), **en la app, exactos y sin costo**. Se toman fecha, número, timbrado, CDC, condición, moneda y cambio, emisor y receptor con su DV, gravado 10% y 5% con IVA, exento, IVA y total. Después siguen la misma asignación de cliente por RUC, la misma revisión y el mismo aviso del IVA.
+  - Las notas de remisión no tienen montos fiscales: se informan y no se cargan.
+  - Un XML que no sea SIFEN lo lee Claude.
+- **Pestaña XML / KuDE:** botón nuevo **«Pasar a Comprobantes»**. Manda las facturas cargadas a la misma pantalla de revisión, que guarda en el registro sin duplicar y avisa si cambia un IVA ya cargado.
+- **Prueba hecha:**
+  - Con `factura-prueba.xml`: Gs. 131.000, 110.000 al 10% y 21.000 al 5%, timbrado 17234567, fecha 15/01/2024, por los dos caminos. Al subirla de nuevo, detecta «1 ya estaban».
+  - Se repitió la prueba completa de CAMBIO-20 (subir, revisar, aviso y aceptar), sin errores.
+- **Para el backend real:** pegar también `AppsScript-CdcLotes.gs` si todavía no está en el proyecto de Apps Script. El `AppsScript-Avisos.gs` de este repositorio ya deriva `cdc*`, `lectura*` y `comprobantes*`.

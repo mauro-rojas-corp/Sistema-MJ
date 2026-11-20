@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
   AlertCircle,
@@ -21,6 +21,8 @@ import { descargarDirectoPedir, descargarDirectoEstado, descargarDirectoResultad
 import UseAnimations from 'react-useanimations';
 import downloadCloud from 'react-useanimations/lib/downloadCloud';
 import './xml.css';
+
+const SubirAlRegistro = lazy(() => import('../comprobantes/SubirAlRegistro'));
 
 // Herramienta XML / KuDE (mínimo viable): carga archivos XML SIFEN ya
 // descargados (p. ej. desde eKuatia), los parsea EN EL NAVEGADOR con el
@@ -120,6 +122,7 @@ export default function XmlToolModule({ withDesktopSidebar = false }) {
   const [aviso, setAviso] = useState('');
   const [printing, setPrinting] = useState(false);
   const [printAll, setPrintAll] = useState(false);
+  const [alRegistro, setAlRegistro] = useState(null); // File[] a pasar a Comprobantes
   const fileInputRef = useRef(null);
 
   const selected = docs.find((d) => d.id === selectedId) || docs[0] || null;
@@ -640,6 +643,15 @@ export default function XmlToolModule({ withDesktopSidebar = false }) {
             <h2>Documentos cargados ({docs.length})</h2>
             <button
               type="button"
+              className="xml-btn primary xml-al-registro"
+              onClick={() => setAlRegistro(docs.map((d) => new File([d.xmlRaw], d.fileName || 'factura.xml', { type: 'text/xml' })))}
+              title="Pasar estas facturas al registro de comprobantes del cliente (con revisión)"
+            >
+              <FileCode2 size={14} />
+              <span>Pasar a Comprobantes</span>
+            </button>
+            <button
+              type="button"
               className="xml-btn ghost"
               onClick={() => { setDocs([]); setSelectedId(null); setAviso(''); setError(''); }}
             >
@@ -744,6 +756,11 @@ export default function XmlToolModule({ withDesktopSidebar = false }) {
             : <KudeDocument document={selected} id="kude-print-doc" />}
         </div>,
         document.body,
+      )}
+      {alRegistro && (
+        <Suspense fallback={null}>
+          <SubirAlRegistro archivos={alRegistro} onCerrar={(msg) => { setAlRegistro(null); if (msg) setAviso(msg); }} />
+        </Suspense>
       )}
     </main>
   );
