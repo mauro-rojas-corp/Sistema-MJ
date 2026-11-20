@@ -1,0 +1,248 @@
+/*
+ * Herramienta XML / KuDE.
+ *
+ * Tailwind CSS v4 SOLO con tema + utilidades (sin preflight): el KuDE
+ * portado de xml-parser usa clases utilitarias, pero Sistema-MJ tiene su
+ * propio CSS global y un reset de Tailwind rompería el resto de la app.
+ * Las utilidades se generan únicamente para las clases presentes en el
+ * código y este archivo viaja en el chunk perezoso del módulo XML.
+ * La variante `dark:` queda atada a una clase `.dark` que Sistema-MJ no
+ * usa (usa data-theme), así el KuDE se ve siempre en su versión clara,
+ * como corresponde a un documento para imprimir.
+ */
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ---------- Chrome del módulo (tokens del tema ejecutivo --rx-*) ---------- */
+.xml-root {
+  font-size: var(--rx-fs-md);
+  font-variant-numeric: tabular-nums;
+}
+.xml-root button,
+.xml-root input { font: inherit; color: inherit; }
+.xml-root button:focus-visible,
+.xml-drop:focus-visible { outline: 2px solid var(--rx-brand); outline-offset: 2px; }
+
+.xml-head {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+  gap: 12px 24px; margin-bottom: 18px;
+}
+.xml-head h1 { margin: 0; font-size: var(--rx-fs-2xl); font-weight: 800; letter-spacing: -0.01em; }
+.xml-head p { margin: 2px 0 0; color: var(--rx-muted); font-size: var(--rx-fs-xs); }
+
+.xml-panel {
+  background: var(--rx-surface); border: 1px solid var(--rx-line);
+  border-radius: 12px; padding: 14px; margin-bottom: 14px;
+}
+
+.xml-btn {
+  display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 8px;
+  border: 1px solid var(--rx-line); background: var(--rx-surface); cursor: pointer;
+  font-weight: 600; font-size: var(--rx-fs-sm);
+}
+.xml-btn.primary { background: var(--rx-brand); border-color: var(--rx-brand); color: #fff; }
+.xml-btn.primary:hover { background: var(--rx-brand-dark); }
+.xml-btn.ghost { background: transparent; color: var(--rx-muted); }
+.xml-btn.ghost:hover { color: var(--rx-red); border-color: var(--rx-red); }
+
+.xml-drop {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 4px; text-align: center; cursor: pointer;
+  border: 2px dashed var(--rx-line-strong); border-radius: 12px;
+  padding: 26px 16px; color: var(--rx-muted);
+  transition: border-color .15s ease, background .15s ease;
+}
+.xml-drop strong { color: var(--rx-ink); font-size: var(--rx-fs-md); }
+.xml-drop span { font-size: var(--rx-fs-xs); }
+.xml-drop:hover { border-color: var(--rx-brand); }
+.xml-drop.is-drag { border-color: var(--rx-brand); background: var(--rx-brand-soft); }
+
+.xml-msg {
+  display: flex; align-items: flex-start; gap: 6px;
+  margin: 12px 0 0; font-size: var(--rx-fs-xs);
+}
+.xml-msg svg { flex-shrink: 0; margin-top: 1px; }
+.xml-msg.error { color: var(--rx-red); }
+.xml-msg.ok { color: var(--rx-green); }
+
+.xml-sistema { display: grid; gap: 12px; }
+.xml-lote-row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; }
+.xml-lote-row label { display: flex; align-items: center; gap: 8px; flex: 1 1 320px; min-width: 0; font-size: var(--rx-fs-xs); font-weight: 600; color: var(--rx-muted); }
+.xml-lote-row .xml-select { flex: 1; min-width: 200px; }
+.xml-chip {
+  border: 1px solid var(--rx-line); border-radius: 999px; padding: 4px 10px;
+  font-size: var(--rx-fs-2xs); font-weight: 700; color: var(--rx-muted); white-space: nowrap;
+}
+.xml-acciones { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.xml-acciones .xml-btn { justify-content: center; padding: 10px 12px; min-height: 42px; }
+@media (max-width: 640px) { .xml-acciones { grid-template-columns: 1fr; } }
+.xml-btn:disabled { opacity: .55; cursor: default; }
+.xml-btn:not(:disabled):hover { border-color: var(--rx-brand); }
+.xml-sistema-text { min-width: 0; }
+.xml-sistema-text h2 { margin: 0; font-size: var(--rx-fs-lg); font-weight: 700; }
+.xml-sistema-text p { margin: 2px 0 0; color: var(--rx-muted); font-size: var(--rx-fs-xs); }
+.xml-select {
+  border: 1px solid var(--rx-line); border-radius: 8px; background: var(--rx-surface);
+  padding: 8px 10px; font: inherit; font-size: var(--rx-fs-sm); color: inherit;
+  max-width: 100%;
+}
+.xml-select:focus-visible { outline: 2px solid var(--rx-brand); outline-offset: 2px; }
+
+.xml-list-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  margin-bottom: 10px;
+}
+.xml-list-head h2 { margin: 0; font-size: var(--rx-fs-lg); font-weight: 700; }
+
+.xml-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.xml-list li {
+  display: flex; align-items: stretch; gap: 4px;
+  border: 1px solid var(--rx-line); border-radius: 10px; overflow: hidden;
+}
+.xml-list li.is-active { border-color: var(--rx-brand); background: var(--rx-brand-soft); }
+.xml-list-main {
+  flex: 1; display: flex; align-items: flex-start; gap: 10px; text-align: left;
+  border: 0; background: transparent; padding: 10px 12px; cursor: pointer; min-width: 0;
+}
+.xml-list-main svg { flex-shrink: 0; margin-top: 2px; color: var(--rx-brand); }
+.xml-list-text { display: grid; gap: 1px; min-width: 0; }
+.xml-list-text strong { font-size: var(--rx-fs-sm); overflow-wrap: anywhere; }
+.xml-list-text small { color: var(--rx-muted); font-size: var(--rx-fs-2xs); overflow-wrap: anywhere; }
+.xml-list-text .xml-cdc { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.xml-list-remove {
+  border: 0; background: transparent; padding: 0 10px; cursor: pointer; color: var(--rx-muted);
+}
+.xml-list-remove:hover { color: var(--rx-red); }
+
+.xml-kude-wrap { margin-bottom: 14px; }
+.xml-kude-scroll {
+  overflow-x: auto; border-radius: 4px;
+}
+/* En pantallas chicas el documento conserva un ancho legible y se
+   desplaza horizontalmente, en vez de aplastar el texto. */
+.xml-kude-scroll .kude-printable-area { min-width: 660px; }
+.xml-foot { margin-top: 8px; color: var(--rx-muted); font-size: var(--rx-fs-xs); overflow-wrap: anywhere; }
+.xml-empty { color: var(--rx-muted); font-size: var(--rx-fs-sm); }
+
+/* ---------- Impresión: solo el KuDE seleccionado (portal en <body>) ---------- */
+.xml-print { display: none; }
+
+@media print {
+  @page { size: A4 portrait; margin: 6mm; }
+
+  html, body { background: #fff !important; }
+
+  body.xml-printing > #root { display: none !important; }
+
+  body.xml-printing .xml-print {
+    display: block; color: #0f172a; background: #fff;
+    font: 11px/1.32 -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+
+  .xml-print .no-print { display: none !important; }
+
+  .xml-print .kude-printable-area {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin: 0 auto !important;
+    box-shadow: none !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Al imprimir, los fondos pesados del documento se neutralizan
+     (ahorro de tinta, igual que en el parser original). */
+  .xml-print .kude-printable-area,
+  .xml-print .kude-printable-area div,
+  .xml-print .kude-printable-area table,
+  .xml-print .kude-printable-area thead,
+  .xml-print .kude-printable-area tbody,
+  .xml-print .kude-printable-area tfoot,
+  .xml-print .kude-printable-area tr,
+  .xml-print .kude-printable-area th,
+  .xml-print .kude-printable-area td {
+    background-color: transparent !important;
+  }
+
+  .xml-print .kude-printable-area .text-white { color: #0f172a !important; }
+  .xml-print .kude-printable-area table thead { display: table-header-group; }
+  .xml-print .kude-printable-area table tbody tr { break-inside: avoid; }
+}
+
+/* ---------- Visualizador de facturas (Fase 1) ---------- */
+.xml-explorer {
+  display: grid; gap: 14px; align-items: start;
+}
+@media (min-width: 1024px) {
+  .xml-explorer { grid-template-columns: 340px minmax(0, 1fr); }
+  .xml-explorer .xml-rail {
+    position: sticky; top: 12px; max-height: calc(100vh - 24px);
+    overflow-y: auto; margin-bottom: 0;
+  }
+}
+.xml-viewer-bar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  background: var(--rx-surface); border: 1px solid var(--rx-line);
+  border-radius: 12px; padding: 10px 12px; margin-bottom: 10px;
+}
+.xml-viewer-info { flex: 1 1 180px; min-width: 0; display: grid; gap: 1px; text-align: center; }
+.xml-viewer-info strong { font-size: var(--rx-fs-md); }
+.xml-viewer-info small { color: var(--rx-muted); font-size: var(--rx-fs-2xs); overflow-wrap: anywhere; }
+.xml-btn.xml-nav { padding: 8px 10px; }
+.xml-btn.xml-nav:disabled { opacity: .45; cursor: default; }
+.xml-btn.xml-print-btn { padding: 10px 22px; font-size: var(--rx-fs-md); }
+.xml-progreso { margin-top: 2px; }
+.xml-progreso-head {
+  display: flex; justify-content: space-between; gap: 10px;
+  font-size: var(--rx-fs-xs); font-weight: 600; margin-bottom: 6px;
+}
+.xml-progreso-head span:last-child { color: var(--rx-muted); font-weight: 500; }
+.xml-progreso-bar {
+  height: 10px; border-radius: 999px; background: var(--rx-line);
+  overflow: hidden;
+}
+.xml-progreso-bar > div {
+  height: 100%; background: var(--rx-brand); border-radius: 999px;
+  transition: width .4s ease;
+}
+.xml-progreso small { color: var(--rx-muted); font-size: var(--rx-fs-2xs); }
+@media print {
+  .xml-print .xml-print-page { page-break-after: always; break-after: page; }
+  .xml-print .xml-print-page:last-child { page-break-after: auto; break-after: auto; }
+}
+
+/* Scroll del visualizador: fino, suave y con los colores del sistema */
+.xml-rail, .xml-kude-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--rx-line-strong) transparent;
+  scroll-behavior: smooth;
+}
+.xml-rail::-webkit-scrollbar, .xml-kude-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
+.xml-rail::-webkit-scrollbar-track, .xml-kude-scroll::-webkit-scrollbar-track { background: transparent; }
+.xml-rail::-webkit-scrollbar-thumb, .xml-kude-scroll::-webkit-scrollbar-thumb {
+  background: var(--rx-line-strong); border-radius: 999px;
+}
+.xml-rail::-webkit-scrollbar-thumb:hover, .xml-kude-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--rx-brand);
+}
+.xml-rail li { scroll-margin: 6px; }
+.xml-root .spin { animation: xml-spin 1s linear infinite; }
+@keyframes xml-spin { to { transform: rotate(360deg); } }
+
+/* Resumen de tiempos de la descarga directa (spike) */
+.xml-directa-resumen { margin-top: 10px; border: 1px solid var(--rx-line, #d8e0ec); border-radius: 10px; padding: 8px 10px; font-size: var(--rx-fs-xs, 12px); }
+.xml-directa-head { display: flex; justify-content: space-between; gap: 8px; font-weight: 700; }
+.xml-directa-resumen summary { cursor: pointer; }
+.xml-directa-resumen ul { list-style: none; margin: 6px 0 0; padding: 0; display: grid; gap: 2px; }
+.xml-directa-resumen li { display: flex; justify-content: space-between; gap: 8px; font-family: ui-monospace, monospace; }
+.xml-directa-resumen li .mal { color: #b42318; font-family: inherit; }
+
+/* Sesion local de trabajo (30 min) */
+.xml-sesion-chip {
+  border: 1px dashed var(--rx-line); border-radius: 10px; padding: 8px 12px;
+  color: var(--rx-muted); font-size: var(--rx-fs-xs); margin: 0 0 12px;
+}

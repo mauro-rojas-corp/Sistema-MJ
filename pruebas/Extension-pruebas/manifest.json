@@ -1,17 +1,20 @@
 {
   "manifest_version": 3,
   "name": "Ekuatia Login PRUEBAS",
-  "version": "2.7",
+  "version": "2.22",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAzkJaMVPY5RYXkpl3kBtadQ3IS3yjG17Aw+l+dcI0u+BlOidmPX2fXiXQuhCqrnZIiPV6pA2FZ/PqHro2jUAdlOhUYFmX8ZIXOGHYwtDa+nAWctGYWu9DycrUNDjjYQl4EFyb04Y6dZuUKRbQPgZQXZ9FOq4HCjW/8fbq3JdksPADvVEaiHdEXEcO5vNi7NOHZm57FMxuG5ivxbLJ/JG3T+2zq4r/XHCRkCCNwnulLfgKVXYu/U9y9yhjGN5rC73+VFlOM5E18cl7/O/1TnKxDT7107pGLDAPqop2exowcaa3dN0/MGhj/xJi50q4ikyuT8mwvwc2pEp0RuzHdRg0jQIDAQAB",
   "description": "[PRUEBAS] Puente de Control Clientes: login y Formulario 120 en Marangatu, descarga de formularios IVA y envío de la ficha por WhatsApp Web",
   "permissions": [
     "scripting",
     "tabs",
-    "storage"
+    "storage",
+    "contentSettings"
   ],
   "host_permissions": [
     "https://marangatu.set.gov.py/*",
-    "https://web.whatsapp.com/*"
+    "https://ekuatia.set.gov.py/*",
+    "https://web.whatsapp.com/*",
+    "https://api.capsolver.com/*"
   ],
   "background": {
     "service_worker": "background.js"
@@ -19,11 +22,29 @@
   "action": {
     "default_title": "Ekuatia Login PRUEBAS",
     "default_popup": "popup.html",
-    "default_icon": "logo.png"
+    "default_icon": {
+      "16": "icono-16.png",
+      "32": "icono-32.png",
+      "48": "icono-48.png",
+      "128": "icono-128.png"
+    }
   },
   "icons": {
-    "128": "logo.png"
+    "16": "icono-16.png",
+    "32": "icono-32.png",
+    "48": "icono-48.png",
+    "128": "icono-128.png"
   },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "asistente-logo.png"
+      ],
+      "matches": [
+        "https://marangatu.set.gov.py/*"
+      ]
+    }
+  ],
   "externally_connectable": {
     "matches": [
       "http://localhost/*",
@@ -39,8 +60,39 @@
         "descargaContent.js",
         "paginas.js",
         "relevamientoNav.js",
-        "panelContent.js"
+        "panelContent.js",
+        "recolectorCdcCore.js",
+        "recolectorCdcPagina.js",
+        "recolectorCdcLotes.js",
+        "recolectorCdcUi.js",
+        "asistenteMj.js"
       ],
+      "css": [
+        "asistenteMj.css"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://ekuatia.set.gov.py/consultas*"
+      ],
+      "js": [
+        "recolectorCdcCore.js",
+        "ekuatiaPagina.js",
+        "ekuatiaUi.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://marangatu.set.gov.py/*"
+      ],
+      "js": [
+        "formulario120.js",
+        "ivaContent.js"
+      ],
+      "all_frames": true,
+      "match_origin_as_fallback": true,
       "run_at": "document_idle"
     }
   ]

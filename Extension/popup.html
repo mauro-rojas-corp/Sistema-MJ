@@ -204,6 +204,21 @@
     font: inherit;
   }
   label input:focus, label select:focus { outline: 2px solid color-mix(in srgb, var(--brand) 45%, transparent); border-color: var(--brand); }
+  /* La lista desplegable nativa se pinta blanca en Windows: sin esto, en
+     modo oscuro las opciones no seleccionadas quedan blancas sobre blanco. */
+  select option { color: #111827; background-color: #ffffff; }
+  .historial { white-space: pre-line; font: 11px/1.5 ui-monospace, Consolas, monospace; margin-top: 6px; }
+  /* Buscador de clientes */
+  .resultados:empty { display: none; }
+  .resultados { margin-top: 6px; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; }
+  .resultados button {
+    display: flex; flex-direction: column; align-items: flex-start; gap: 1px;
+    margin: 0; border: 0; border-bottom: 1px solid var(--line); border-radius: 0;
+    padding: 8px 10px; text-align: left; font-weight: 600;
+  }
+  .resultados button:last-child { border-bottom: 0; }
+  .resultados button small { color: var(--muted); font-weight: 500; font-size: 11.5px; }
+  .resultados button.sel { background: var(--brand-soft); }
   .fila { display: flex; gap: 8px; }
   .fila > label { flex: 1; }
   progress { width: 100%; height: 8px; margin-top: 8px; accent-color: var(--brand); }
@@ -246,7 +261,7 @@
   <header class="top">
     <img src="icono-128.png" alt="MJ">
     <div class="marca">
-      <strong>Ekuatia</strong>
+      <strong>Extensión</strong>
       <span>MJ Estudio Contable</span>
     </div>
     <span id="chipMarangatu" class="chip">…</span>
@@ -261,6 +276,18 @@
   <main>
     <!-- ── Inicio ───────────────────────────────────────────────── -->
     <div class="panel" data-panel="inicio" role="tabpanel">
+      <section class="card destacada">
+        <h2>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          Entrar a Marangatu
+        </h2>
+        <label>Cliente (nombre o RUC)
+          <input id="busQ" type="search" autocomplete="off" spellcheck="false" placeholder="Buscar en Control Clientes">
+        </label>
+        <div id="busResultados" class="resultados" role="listbox" aria-label="Clientes encontrados"></div>
+        <p id="busEstado" class="nota">Busca entre tus clientes de Control Clientes (tiene que estar abierta en una pestaña). La clave no pasa por la extensión.</p>
+      </section>
+
       <section class="card destacada">
         <h2>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg>
@@ -322,6 +349,36 @@
         </div>
         <p class="nota">Abrí esta ventana con la sesión del cliente iniciada en Marangatu. Por cada formulario se abre el diálogo de impresión: elegí <b>Guardar como PDF</b>.</p>
       </section>
+
+      <section class="card">
+        <h2>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M10 13l-2 2 2 2M14 13l2 2-2 2"/></svg>
+          Descarga directa de XML (eKuatia)
+        </h2>
+        <p class="muted">Clave del servicio de captcha para bajar XML desde Control Clientes sin el worker. Se guarda solo en esta extensión.</p>
+        <label>Clave del servicio
+          <input id="dirClave" type="password" autocomplete="off" placeholder="Pegá la clave">
+        </label>
+        <button id="dirGuardar" class="primary">Guardar clave</button>
+        <div class="estado"><div id="dirEstado" class="muted">Sin clave configurada.</div></div>
+        <label>Ritmo de descarga (para medir tiempos)
+          <select id="dirPerfil">
+            <option value="actual">Actual: 1 token a la vez · pausa 2 s</option>
+            <option value="prudente">Prudente rápido: 3 tokens en vuelo · pausa 2 s</option>
+            <option value="rapido">Rápido: 6 tokens en vuelo · pausa 0,5 s</option>
+            <option value="fondo">A fondo: todos los tokens · sin pausa</option>
+          </select>
+        </label>
+        <div id="dirPerfilEstado" class="muted"></div>
+        <div id="dirUltimaCorrida" class="muted">Sin corridas registradas en esta sesión del navegador.</div>
+        <p class="nota"><b>Bitácora de mediciones</b> (últimas 20 corridas; queda guardada en esta PC aunque cierres Chrome):</p>
+        <div id="dirHistorial" class="historial muted">Bitácora vacía.</div>
+        <div class="acciones">
+          <button id="dirCopiarHistorial">Copiar resumen</button>
+          <button id="dirBorrarHistorial">Borrar bitácora</button>
+        </div>
+        <div id="dirHistorialEstado" class="muted"></div>
+      </section>
     </div>
 
     <!-- ── Herramientas ─────────────────────────────────────────── -->
@@ -372,7 +429,9 @@
   <script src="popupUi.js"></script>
   <script src="popup.js"></script>
   <script src="popupDescarga.js"></script>
+  <script src="popupDirecta.js"></script>
   <script src="popupRelevamiento.js"></script>
   <script src="popupPagina.js"></script>
+  <script src="popupBuscador.js"></script>
 </body>
 </html>

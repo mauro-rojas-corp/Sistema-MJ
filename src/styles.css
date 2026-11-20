@@ -1876,6 +1876,9 @@ body {
   width: 100%;
   padding: 20px;
   box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 32px);
 }
 
 .team-modal-header {
@@ -1928,6 +1931,29 @@ body {
 
 .settings-modal {
   max-width: 420px;
+}
+
+/* La vista de lotes es larga: más ancha y con el cuerpo scrolleable */
+.settings-modal:has(> .cdc-lotes-main) {
+  max-width: 600px;
+}
+
+.settings-main {
+  overflow-y: auto;
+  min-height: 0;
+  padding-right: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-light) transparent;
+}
+
+.settings-main::-webkit-scrollbar { width: 8px; }
+.settings-main::-webkit-scrollbar-track { background: transparent; }
+.settings-main::-webkit-scrollbar-thumb {
+  background: var(--border-light);
+  border-radius: 999px;
+}
+.settings-main::-webkit-scrollbar-thumb:hover {
+  background: var(--primary, #159a6c);
 }
 
 .settings-title-with-back {
@@ -2611,4 +2637,19 @@ body {
    esqueleto o spinner en cuanto llega. */
 .lazy-screen-fallback {
   min-height: 40vh;
+}
+
+/* Rendimiento del panel de Configuración: el desenfoque a pantalla
+   completa del velo (backdrop-filter) repinta en cada scroll/clic del
+   modal y lo vuelve pastoso en PCs modestas. Solo para este modal se
+   reemplaza por un velo oscuro apenas más opaco, sin blur. */
+/* Ojo con el orden: el compresor de CSS, si -webkit- va DESPUÉS, descarta
+   la propiedad estándar y Chrome seguía aplicando el blur. -webkit- primero. */
+.team-modal-overlay:has(> .settings-modal) {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background-color: rgba(0, 0, 0, 0.58);
+}
+.team-modal.settings-modal {
+  transform: translateZ(0);
 }

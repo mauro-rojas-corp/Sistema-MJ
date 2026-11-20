@@ -16,11 +16,12 @@ const IvaModule = lazy(() => import('./iva/IvaModule'));
 const LibrosModule = lazy(() => import('./libros/LibrosModule'));
 const ComprobantesModule = lazy(() => import('./comprobantes/ComprobantesModule'));
 const MarcacionesModule = lazy(() => import('./marcaciones/MarcacionesModule'));
+const XmlToolModule = lazy(() => import('./xml/XmlToolModule'));
 // La planilla de marcaciones cargada se descarta al cerrar sesión o cambiar de usuario.
 onPrivateDataCleared(olvidarPlanilla);
 import AppSplashLoader from './components/AppSplashLoader';
 import ScreenErrorBoundary from './components/ScreenErrorBoundary';
-import MobileTabBar from './components/MobileTabBar';
+import MobileTabBar, { MobileMenuButton } from './components/MobileTabBar';
 import DesktopSidebar from './components/DesktopSidebar';
 import useMediaQuery from './hooks/useMediaQuery';
 import useAvisos from './hooks/useAvisos';
@@ -38,8 +39,9 @@ import { AMBIENTE_NINGUNA, resolverAmbiente } from './ambiente/ambientes';
 import PendingClientOpener from './components/PendingClientOpener';
 import GuidedTour from './components/GuidedTour';
 import { construirPasosGuia } from './guia/pasosGuia';
-const SettingsDialog = lazy(() => import('./components/SettingsDialog'));
+import SettingsHost from './components/SettingsHost';
 import { ClientsProvider, useClientsActions } from './context/ClientsContext';
+import BuscadorMarangatu from './components/BuscadorMarangatu';
 import { STORAGE_KEY_USER } from './config';
 import {
   FONT_SCALE_OPTIONS,
@@ -123,7 +125,9 @@ export default function App({
   // RUC a abrir en Vencimientos IVA al llegar desde el detalle del cliente.
   const [ivaOpenRuc, setIvaOpenRuc] = useState(null);
   const isMobilePeriodNav = useMediaQuery('(max-width: 860px)');
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  // Configuración abre/cierra dentro de SettingsHost (sin redibujar App).
+  const settingsHostRef = useRef(null);
+  const setSettingsOpen = useCallback((abierto) => settingsHostRef.current?.setAbierto(abierto), []);
   const [pinChangeError, setPinChangeError] = useState('');
   const [pinChangeSubmitting, setPinChangeSubmitting] = useState(false);
   const [pinChangeNotice, setPinChangeNotice] = useState('');
@@ -163,7 +167,12 @@ export default function App({
   const canAssignClients =
     !readOnlyPreview && (userRole === 'SUPERUSUARIO' || userRole === 'ADMINISTRADOR');
   const authReady = !user || authState.status !== 'checking';
-  const buzon = useAvisos(authenticated && !readOnlyPreview, `${user || ''}|${activeSessionToken}`);
+  // Navegación del teléfono: barra inferior + menú ☰ arriba a la izquierda.
+  const mostrarNavMovil = Boolean(
+    uiMode === 'executive' && isMobilePeriodNav && authenticated && year && month &&
+      !selectedClient && !creatingWithHeaders
+  );
+  const buzon =useAvisos(authenticated && !readOnlyPreview, `${user || ''}|${activeSessionToken}`);
   const initialContentReady = initialScreenReady && authReady;
   const isAdminUser = userRole === 'SUPERUSUARIO' || userRole === 'ADMINISTRADOR';
   // Página web del estudio (configurable en Vencimientos IVA → Colores y feriados).
@@ -769,7 +778,7 @@ export default function App({
     // liquidación que la guía está mostrando.
     if (mantener && tabActualRef.current === tab) return;
     tabChangeRef.current(tab);
-  }, []);
+  }, [setSettingsOpen]);
   const abrirGuia = useCallback(() => {
     setBuzonOpen(false);
     setAgenteOpen(false);
@@ -927,7 +936,15 @@ export default function App({
         <header className="real-exec-navbar">
           {/* Sin marca: el logo y el lema no aportan a la operación diaria.
               La barra queda limpia con las acciones (período, actualizar,
-              configuración, usuario). */}
+              configuración, usuario). En el teléfono, a la izquierda, el
+              menú ☰ con las secciones que no entran en la barra inferior. */}
+          {mostrarNavMovil && (
+            <MobileMenuButton
+              activeTab={assignClientsOpen ? 'assign' : mobileTab}
+              canAssignClients={canAssignClients}
+              onChange={handleMobileTabChange}
+            />
+          )}
           {ambienteActivo && (
             <>
               <span className="rx-amb-strip" aria-hidden="true" />
@@ -958,7 +975,7 @@ export default function App({
                 <span>Sincronizando…</span>
               </span>
             )}
-            {year && month && !selectedClient && mobileTab !== 'iva' && mobileTab !== 'marcaciones' && mobileTab !== 'libros' && mobileTab !== 'comprobantes' && (
+            {year && month && !selectedClient && mobileTab !== 'iva' && mobileTab !== 'marcaciones' && mobileTab !== 'libros' && mobileTab !== 'comprobantes' && mobileTab !== 'xml' && (
               <button
                 type="button"
                 className="real-exec-refresh-button"
@@ -1302,6 +1319,9 @@ export default function App({
         year={authenticated ? year : null}
         month={authenticated ? month : null}
       >
+        {/* Buscador de clientes del ícono de la extensión: responde nombre y
+            RUC, y entra a Marangatu como el botón de la fila. */}
+        {authenticated && !readOnlyPreview && year && month && <BuscadorMarangatu />}
         {authenticated && avisoTarget && (
           <PendingClientOpener
             key={avisoTarget.key}
@@ -1372,20 +1392,15 @@ export default function App({
           />
         )}
 
-      {uiMode === 'executive' && isMobilePeriodNav && authenticated && year && month &&
-        !selectedClient && !creatingWithHeaders && (
-          <MobileTabBar
-            activeTab={assignClientsOpen ? 'assign' : mobileTab}
-            canAssignClients={canAssignClients}
-            onChange={handleMobileTabChange}
-          />
-        )}
+      {mostrarNavMovil && (
+        <MobileTabBar
+          activeTab={assignClientsOpen ? 'assign' : mobileTab}
+          onChange={handleMobileTabChange}
+        />
+      )}
 
-      {(settingsOpen || mustChangePin) && (
-      <Suspense fallback={null}>
-      <SettingsDialog
-        key={mustChangePin ? 'settings-must-change-pin' : 'settings-open'}
-        open={settingsOpen || mustChangePin}
+      <SettingsHost
+        ref={settingsHostRef}
         user={user}
         userRole={userRole}
         mustChangePin={mustChangePin}
@@ -1393,10 +1408,7 @@ export default function App({
         fontScale={fontScale}
         fontScaleOptions={FONT_SCALE_OPTIONS}
         error={pinChangeError}
-        submitting={pinChangeSubmitting}
-        onClose={() => {
-          if (!pinChangeSubmitting && !mustChangePin) setSettingsOpen(false);
-        }}
+        pinChangeSubmitting={pinChangeSubmitting}
         onChangePin={handleChangePin}
         onChangeUser={handleChangeUser}
         onThemeChange={setTheme}
@@ -1408,8 +1420,6 @@ export default function App({
             : null
         }
       />
-      </Suspense>
-      )}
     </div>
   );
 }
@@ -1594,6 +1604,14 @@ function PeriodScreens({
             withDesktopSidebar={!isMobilePeriodNav}
             initialRuc={ivaOpenRuc}
           />
+        </motion.div>
+      );
+    }
+
+    if (usePeriodTabs && mobileTab === 'xml') {
+      return (
+        <motion.div key={`xml-${year}-${month}`} variants={pageVariants} initial="initial" animate="animate" exit="exit">
+          <XmlToolModule withDesktopSidebar={!isMobilePeriodNav} />
         </motion.div>
       );
     }

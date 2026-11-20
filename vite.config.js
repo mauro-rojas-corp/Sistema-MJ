@@ -1,5 +1,6 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
@@ -21,6 +22,10 @@ export default defineConfig({
   },
   plugins: [
     react(),
+    // Tailwind v4 solo compila el CSS de src/xml/xml.css (tema +
+    // utilidades, sin preflight) para el KuDE portado; el resto de la
+    // app sigue con su CSS propio.
+    tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {

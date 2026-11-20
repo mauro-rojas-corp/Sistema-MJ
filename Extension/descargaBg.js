@@ -467,8 +467,9 @@ chrome.runtime.onMessageExternal.addListener((msg, sender, sendResponse) => {
 // Puerto para que la app reciba el avance en vivo. Si el service worker se
 // duerme, el puerto se cierra y la app lo vuelve a abrir (recibe el estado).
 chrome.runtime.onConnectExternal.addListener((port) => {
+  if (port.name !== 'eku-app') return; // otros puertos (eku-buscador) los atiende su archivo
   const origen = getVerifiedSenderOrigin(port.sender);
-  if (port.name !== 'eku-app' || !origen || !ALLOWED_APP_ORIGINS.has(origen)) {
+  if (!origen || !ALLOWED_APP_ORIGINS.has(origen)) {
     port.disconnect();
     return;
   }

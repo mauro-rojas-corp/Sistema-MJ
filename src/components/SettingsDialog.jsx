@@ -18,6 +18,7 @@ import {
   X,
 } from 'lucide-react';
 import { api } from '../api';
+import CdcLotesPanel from '../cdc/CdcLotesPanel';
 import SitioWebLink from '../estudio/SitioWebLink';
 import {
   AMBIENTES,
@@ -312,9 +313,11 @@ export default function SettingsDialog({
               <span id="settings-title">
                 {activeView === 'admin-users'
                   ? 'Gestión de usuarios'
-                  : mustChangePin
-                    ? 'Cambio obligatorio de PIN'
-                    : 'Cambiar mi PIN'}
+                  : activeView === 'cdc-lotes'
+                    ? 'Lotes XML (CDC)'
+                    : mustChangePin
+                      ? 'Cambio obligatorio de PIN'
+                      : 'Cambiar mi PIN'}
               </span>
             </div>
           )}
@@ -401,6 +404,18 @@ export default function SettingsDialog({
             )}
 
             <section className="settings-section">
+              <h3 className="settings-section-title">Marangatu / Descargas XML</h3>
+              <button type="button" className="settings-action" onClick={() => setView('cdc-lotes')}>
+                <RefreshCw size={16} />
+                <span>Lotes XML (CDC)</span>
+              </button>
+              <p className="settings-note">
+                Registrar en el sistema los lotes de CDCs marcados en
+                Marangatu y ver los que ya están en cola.
+              </p>
+            </section>
+
+            <section className="settings-section">
               <h3 className="settings-section-title">Seguridad</h3>
               <button type="button" className="settings-action" onClick={openPinView}>
                 <KeyRound size={16} />
@@ -431,6 +446,8 @@ export default function SettingsDialog({
             )}
           </div>
         )}
+
+        {activeView === 'cdc-lotes' && <CdcLotesPanel />}
 
         {activeView === 'pin' && (
           <form onSubmit={handleSubmit} className="auth-pin-form settings-pin-form">

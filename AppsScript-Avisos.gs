@@ -386,6 +386,10 @@ function handleAvisosAction(action, body, sessionUser, sessionRole) {
   if (String(action).indexOf('comprobantes') === 0 && typeof handleComprobantesAction === 'function') {
     return handleComprobantesAction(action, body, sessionUser, sessionRole);
   }
+  // Lotes de CDCs para bajar XML (AppsScript-CdcLotes.gs).
+  if (String(action).indexOf('cdc') === 0 && typeof handleCdcAction === 'function') {
+    return handleCdcAction(action, body, sessionUser, sessionRole);
+  }
   // Asistente con IA y envío de fichas por Whaticket (AppsScript-Agente.gs).
   if ((String(action).indexOf('agente') === 0 || String(action).indexOf('whaticket') === 0) &&
       typeof handleAgenteAction === 'function') {

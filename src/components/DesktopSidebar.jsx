@@ -1,4 +1,4 @@
-import { BarChart3, BookOpen, Clock, FileText, Receipt, UserCog, Users } from 'lucide-react';
+import { BarChart3, BookOpen, Clock, FileCode2, FileText, Receipt, UserCog, Users } from 'lucide-react';
 import SitioWebLink from '../estudio/SitioWebLink';
 
 const ITEMS = [
@@ -7,6 +7,7 @@ const ITEMS = [
   { id: 'iva', label: 'Vencimientos IVA', description: 'Liquidación y ficha', Icon: Receipt },
   { id: 'comprobantes', label: 'Comprobantes', description: 'Facturas, NC y timbrados', Icon: FileText },
   { id: 'libros', label: 'Libros IVA', description: 'Compras y ventas', Icon: BookOpen },
+  { id: 'xml', label: 'XML / KuDE', description: 'Comprobantes e impresión', Icon: FileCode2 },
   { id: 'assign', label: 'Asignar clientes', description: 'Equipo y reparto', Icon: UserCog, requiresAssign: true },
   // requiresAssign = sólo ADMINISTRADOR y SUPERUSUARIO (misma regla que 'Asignar clientes').
   { id: 'marcaciones', label: 'Marcaciones', description: 'Horas a favor y en contra', Icon: Clock, requiresAssign: true },

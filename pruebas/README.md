@@ -50,6 +50,7 @@ original.
 | CAMBIO-16 | Sección «Comprobantes»: registro de facturas y notas de crédito por cliente y mes (timbrado, RUC con DV, moneda, imputación IVA/IRE/IRP) y botón «Traer al formulario» en el IVA | En prueba | No |
 | CAMBIO-17 | Recibos de dinero en «Comprobantes»: emitidos por el cliente o por el estudio (honorarios), numerados solos y en PDF A4 original/duplicado con monto en letras; y recibidos por el cliente | En prueba | No |
 | CAMBIO-18 | Importar el «Detalle de comprobantes registrados» de Marangatu (RG 90): al registro de Comprobantes (todos, sin duplicar) y en Libros IVA | En prueba | No |
+| CAMBIO-19 | Traído de `Jorgeeayala/Sistema-MJ`: pestaña «XML / KuDE», lotes CDC y descarga directa de XML; extensión 2.15 (en los commits figura como CAMBIO-15) | En prueba (backend CDC nuevo: `AppsScript-CdcLotes.gs`) | No |
 
 ### CAMBIO-1 · Ficha del cliente y Buzón
 
@@ -289,6 +290,45 @@ Archivos: `AppsScript-Libros.gs` (nuevo), `AppsScript-Avisos.gs`,
 `src/libros/` (nuevo), `src/api.js`, `src/App.jsx`,
 `src/components/DesktopSidebar.jsx`, `src/components/MobileTabBar.jsx`,
 `src/guia/pasosGuia.jsx`, `tools/smoke/server.mjs`.
+
+### CAMBIO-19 · XML / KuDE (de Jorgeeayala/Sistema-MJ)
+
+Unificación con el commit `dd191c3` de `Jorgeeayala/Sistema-MJ`
+(«Actualizacion De Version Modulo XML/KUDE»), aplicado sobre CAMBIO-13.
+Esa copia partía de CAMBIO-1 + lo traído en CAMBIO-5, así que lo único nuevo
+era este commit.
+
+- Pestaña «XML / KuDE» (junto a «Libros IVA»): cargar XML SIFEN, ver el KuDE
+  e imprimirlo; «Imprimir todo» empaqueta de a 2 facturas cortas por hoja
+  Oficio.
+- Configuración → «Lotes XML (CDC)»: registrar los lotes de CDC que la
+  extensión junta en Marangatu / eKuatia.
+- Extensión **2.15** (2.13 de acá con el ícono MJ y la ventana nueva + 2.14 de
+  Jorge): recolector de CDC en Marangatu y eKuatia, y descarga directa de XML
+  (usa un servicio de captcha con clave propia: pestaña **Descargas** de la
+  ventana de la extensión). Acepta las tres apps:
+  `control-total-clientes`, `control-total-clientes-iva` y `sistema-mj`.
+- Dependencias nuevas: `qrcode`, Tailwind 4 (sólo para `src/xml/xml.css`,
+  sin preflight) y TypeScript. Hace falta `npm install`.
+- XML de ejemplo para probar el KuDE: `pruebas/xml-kude/factura-prueba.xml`
+  (factura de ₲ 131.000).
+
+**Backend de los lotes:** `AppsScript-CdcLotes.gs` es el módulo original del
+proyecto de Apps Script (no estaba en ningún repositorio; se sumó el
+20/11/2026). Acciones de la app (`cdcCrearLote`, `cdcListarLotes`,
+`cdcObtenerItems`, `cdcObtenerXml`, `cdcSubirXml`, `cdcReintentarFallidos`,
+`cdcBorrarLote`) y del worker (`cdcTomarLote`, `cdcReportarItem`,
+`cdcLiberarLote`). Lotes e ítems en las hojas «CDC Lotes» y «CDC Items» de la
+planilla de administración; los XML en la carpeta de Drive «CDC XML
+descargados» (hay que ejecutar una vez `autorizarDriveCdc`). El
+`AppsScript-Avisos.gs` de este repo ya deriva las acciones `cdc*`.
+Pendiente: la pestaña XML en la guía interactiva (`src/guia/pasosGuia.jsx`).
+
+Archivos: `src/xml/` y `src/cdc/` (nuevos), `tsconfig.json`, `package.json`,
+`package-lock.json`, `vite.config.js`, `src/App.jsx`, `src/api.js`,
+`src/marangatu.js`, `src/styles.css`, `src/components/DesktopSidebar.jsx`,
+`src/components/MobileTabBar.jsx`, `src/components/SettingsDialog.jsx`,
+`Extension/` (manifest, background, popup y 10 archivos nuevos).
 
 ## Las tres piezas separadas
 

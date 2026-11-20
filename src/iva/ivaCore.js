@@ -13,7 +13,7 @@ export const DEFAULT_MORA = { interes: 0.0005, contrav: 50000 };
 export const DEFAULT_FIRMA = 'MJ Estudio Contable';
 // Página del estudio mientras no tenga dominio propio; se cambia desde
 // Vencimientos IVA → Colores y feriados → Nombre del estudio → Sitio web.
-export const DEFAULT_SITIO_WEB = 'https://mj-estudio-contable.lovable.app';
+export const DEFAULT_SITIO_WEB = 'https://mjestudiocontable.com.py/';
 // Cada monto guarda `iva`: true = el IVA se extrae del monto (base = m / 1,1);
 // false = el IVA se suma encima (base = m). Los montos viejos guardados como
 // número suelto se interpretan con IVA_DEFAULT (extraído), como siempre.

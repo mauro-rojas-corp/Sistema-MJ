@@ -7,9 +7,14 @@ Puente exclusivo entre **Control Clientes** y Marangatu. Hace tres cosas:
    service worker abre la página oficial de acceso e inyecta los datos una
    sola vez.
 2. **Formulario 120 (IVA):** desde la ficha IVA del cliente, **Copiar a
-   Marangatu** envía las casillas calculadas. Estando en el Formulario 120 de
-   Marangatu, el ícono de la extensión → **Completar formulario** las escribe
-   en sus campos y las marca en amarillo. **La extensión nunca presenta la
+   Marangatu** envía las casillas calculadas y la extensión hace el recorrido:
+   sesión del cliente (cierra la de otro cliente y sus ventanas; si ya es la
+   suya, la reutiliza) → login con su clave → **Presentar Declaración** (en la
+   misma ventana o en una nueva, como lo abra Marangatu) → elige 211 · Mensual
+   · año · mes → la persona toca **Abrir declaración** → apenas aparece el
+   formulario (en la misma pantalla, en otra ventana o en un marco) lo
+   completa y marca en amarillo (`ivaContent.js`). El ícono → **Completar
+   formulario** sigue disponible a mano. **La extensión nunca presenta la
    declaración:** la revisión y el botón "Presentar" son siempre de la
    persona.
 3. **Descarga de formularios IVA (v2.0):** baja como PDF las declaraciones de
@@ -112,9 +117,33 @@ mientras está activado.
 - **Una sola pestaña de trabajo:** el login, el Formulario 120 y la descarga
   reutilizan la pestaña de Marangatu que ya esté abierta (o crean una sola).
   La app ya no abre ventanas propias salvo que la extensión no responda.
-- **Sesión limpia:** antes de entrar con un cliente se cierra la sesión que
-  hubiera (Marangatu comparte la sesión entre pestañas) y se espera la pantalla
-  de acceso. Si no se puede cerrar, se avisa y no se sigue.
+- **Sesión del cliente (v2.9):** la extensión recuerda con qué RUC entró
+  (sólo el RUC, nunca la clave). Si se pide el mismo cliente, reutiliza la
+  sesión; si es otro (o una sesión iniciada a mano), la cierra y cierra las
+  demás pestañas de Marangatu que quedaron de esa sesión.
+- **Ventanas de Marangatu (v2.11):** «Presentar Declaración» se abre con un
+  clic dentro de la página (como una persona), así Marangatu abre su ventana
+  con su «ventana de origen» y su botón «Cerrar» funciona. Para que Chrome no
+  bloquee esa ventana, la extensión permite las ventanas emergentes sólo en
+  `marangatu.set.gov.py` (permiso `contentSettings`).
+- **Cerrar sesión (v2.10, confirmado en el portal real):** la pestaña de
+  trabajo va al menú principal `https://marangatu.set.gov.py/eset/` (espera a
+  que termine de cargar y a que se dibuje el menú) y se hace clic en «Salir»
+  (`<a class="dropdown-item" href="/eset/logout">`); el resultado se confirma
+  viendo la pantalla de acceso (v2.11: antes se perdía con el cambio de página
+  y la primera vez parecía fallar). Respaldo: `/eset/logout`.
+  v2.12: el clic se hace apenas aparece «Salir», sin esperar a que la página
+  termine de cargar todo (el portal real tarda en «terminar» y la extensión
+  parecía quieta); si ya está en el menú principal, no recarga. El botón del
+  panel queda en «Cerrando sesión…» hasta terminar (antes se redibujaba como
+  si nada y había que tocarlo otra vez). Login y «Presentar Declaración»
+  tampoco esperan la carga completa. Después se cierran todas
+  las demás ventanas de Marangatu. Lo mismo hacen el botón «Cerrar sesión» del
+  panel y el pedido de la app (`APP_CERRAR_SESION`).
+- **Mensajes a las pestañas:** cada content script responde sólo a sus
+  propios mensajes (antes `descargaContent.js` respondía a todos y tapaba la
+  respuesta del panel: la extensión creía que no había sesión y no la
+  cerraba).
 - **Nunca se traba por la sesión previa:** desde la app, si no se puede cerrar
   la sesión que había (no se reconoce «Salir», o la pestaña se abrió antes de
   cargar la extensión: en ese caso se recarga sola) se sigue con esa sesión y se
@@ -174,7 +203,9 @@ La extensión admite mensajes sólo desde estos orígenes exactos:
   `http://localhost/*` porque los patrones de Chrome no aceptan puertos, pero
   el service worker vuelve a validar el origen completo y rechaza cualquier
   otro puerto.
-- `https://control-total-clientes.vercel.app/` (app publicada en Vercel).
+- `https://control-total-clientes-iva.vercel.app/` y `https://sistema-mj.vercel.app/`.
+- `https://sistema-mj-blue.vercel.app/` (app unificada, desde la 2.17).
+- `https://mjsistema.vercel.app/` (app publicada con la cuenta nueva, desde la 2.22).
 
 Los deploys de vista previa de Vercel (un subdominio distinto en cada deploy)
 quedan afuera a propósito: la extensión sólo funciona desde la dirección de
@@ -254,3 +285,57 @@ automático (la extensión no puede actuar sobre otros programas).
 > navegadores Chromium. Sin la extensión, Control Clientes abre Marangatu para
 > realizar el acceso manual, y **Copiar lista** deja las casillas en el
 > portapapeles para cargarlas a mano.
+
+## Ventana del ícono (v2.13)
+
+Ícono nuevo: el emblema MJ (sin texto) en 16/32/48/128 px (`icono-*.png`).
+La ventana tiene encabezado con el logo y un indicador «En Marangatu /
+Fuera de Marangatu», y tres pestañas: **Inicio** (Formulario 120 y página
+actual), **Descargas** (formularios IVA) y **Herramientas** (relevamientos,
+plegados). Claro y oscuro según el sistema. Los IDs de los controles no
+cambiaron: `popupUi.js` sólo maneja las pestañas, el indicador y la versión.
+
+## Buscador de clientes y botón «Comprobantes» (v2.16)
+
+Integra lo útil de dos extensiones sueltas («Ekuatia Login» con CSV y
+«Marangatu Helper»), sin sus partes inseguras o repetidas.
+
+- **Entrar a Marangatu (popup → Inicio):** se busca un cliente por nombre o
+  RUC y, al elegirlo, se entra con su Clave MH. **No hay CSV ni claves en la
+  extensión:** el popup pregunta a Control Clientes, que tiene que estar
+  abierta en una pestaña con sesión y un mes elegido. La app mantiene un
+  puerto `eku-buscador` (`src/components/BuscadorMarangatu.jsx`) y
+  `buscadorBg.js` le reenvía las preguntas del popup (`popupBuscador.js`):
+  - `buscar` → la app responde hasta 8 clientes de **su** lista (los que esa
+    persona ve), sólo nombre, RUC y si tiene clave.
+  - `entrar` → la app confirma el RUC de la fila y hace lo mismo que el botón
+    Marangatu de la fila (`APP_AUTO_LOGIN`). La clave va de la app al login
+    por el camino de siempre; nunca pasa por el popup ni se guarda.
+  El puerto valida el origen igual que el resto del puente.
+- **Asistente MJ en Marangatu (`asistenteMj.js/.css`, v2.18):** botón
+  redondo con el logo de MJ, abajo a la izquierda (el panel de tareas va a la
+  derecha). Abre un menú «¿A dónde vamos?» con: **Obtener comprobantes**
+  (Declaraciones Informativas → Gestión de Comprobantes → Obtener Comprob.
+  Elect. y Virtuales; cada ventana nueva retoma el paso; ahí, elegir mes y
+  año busca con un clic), **Visión integral** (Consultas), **Presentar
+  declaración** y **Menú principal**. Desde otra pantalla vuelve primero al
+  menú principal y sigue solo. Se arrastra, se bloquea y cambia de tamaño
+  (engranaje). Desde la 2.19 los íconos son SVG en línea (trazos de Lucide)
+  con animaciones CSS al pasar el mouse; nada de emojis. Desde la 2.20 el
+  botón es sólo el logo (`asistente-logo.png`: el ícono sin su cuadro blanco,
+  sin borde ni sombra) y los nombres internos usan el prefijo `mjas-`/`mjas_`
+  para no chocar con el Marangatu Helper original si sigue instalado. El logo se carga desde la extensión (`web_accessible_resources`, sólo
+  para Marangatu). Los CDC se marcan con la
+  columna **XML** del recolector: el «Extraer / Procesar KuDE» del helper
+  original no se integró (repetía el recolector, y el proceso de KuDE no
+  funcionaba entre Marangatu y eKuatia).
+- No se integraron: el CSV con contraseñas ni el script de AutoHotkey.
+
+## Simulador del flujo (pruebas)
+
+`pruebas/extension-sim/flujo-iva.mjs` carga esta extensión en Chromium contra
+un Marangatu falso (acceso, menú con «Salir» que se dibuja tarde, «Presentar
+Declaración», selección de obligación, formulario y su botón «Cerrar», con el
+bloqueador de ventanas emergentes activo) y recorre: cliente nuevo, mismo
+cliente, otro cliente desde una ventana sin menú, cierre desde la app y sesión
+iniciada a mano. Variantes `NUEVA=0|1` y `FORM_VENTANA=0|1`.

@@ -3,113 +3,435 @@
 <head>
 <meta charset="utf-8">
 <title>Ekuatia Login PRUEBAS</title>
+<!--
+  Ventana del ícono de Ekuatia (v2.13). Tres pestañas: Inicio (página actual
+  y Formulario 120), Descargas (formularios IVA) y Herramientas
+  (relevamientos). Los IDs de los controles son los mismos de siempre:
+  popup.js, popupDescarga.js, popupRelevamiento.js y popupPagina.js no
+  cambian. popupUi.js maneja sólo las pestañas y el encabezado.
+-->
 <style>
-  :root { color-scheme: light dark; --line: #d2d3d6; --muted: #5a5e62; --brand: #27658d; --warn: #9a5b00; --ok: #15906f; --bad: #b42318; }
-  @media (prefers-color-scheme: dark) { :root { --line: #3d515d; --muted: #bcbec3; --brand: #6fa5c3; --warn: #f1b65c; --ok: #54d5aa; --bad: #f58a83; } }
-  body { margin: 0; width: 340px; font: 13px/1.45 system-ui, "Segoe UI", sans-serif; }
-  header { display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-bottom: 1px solid var(--line); }
-  header img { width: 22px; height: 22px; border-radius: 4px; }
-  header strong { font-size: 14px; }
-  section { padding: 12px 14px; border-bottom: 1px solid var(--line); }
-  h2 { margin: 0 0 6px; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  :root {
+    color-scheme: light dark;
+    --bg: #f3f5f8;
+    --card: #ffffff;
+    --ink: #1d2733;
+    --muted: #5d6b78;
+    --line: #dde3ea;
+    --brand: #1f5f8b;
+    --brand-2: #1a7f8e;
+    --brand-soft: #e6f0f7;
+    --ok: #13805f;     --ok-soft: #e3f5ee;
+    --warn: #9a5b00;   --warn-soft: #fff3df;
+    --bad: #b42318;    --bad-soft: #fdecea;
+    --radius: 12px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #12181e;
+      --card: #1b232b;
+      --ink: #e6edf3;
+      --muted: #9fb0bf;
+      --line: #2c3945;
+      --brand: #6fb0d8;
+      --brand-2: #4fc2c9;
+      --brand-soft: #1d3444;
+      --ok: #54d5aa;     --ok-soft: #133328;
+      --warn: #f1b65c;   --warn-soft: #3a2c12;
+      --bad: #f58a83;    --bad-soft: #3d1c1a;
+    }
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body {
+    margin: 0;
+    width: 370px;
+    background: var(--bg);
+    color: var(--ink);
+    font: 13px/1.45 system-ui, "Segoe UI", Roboto, sans-serif;
+  }
+
+  /* Encabezado */
+  .top {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 14px 16px 12px;
+    background: linear-gradient(120deg, #173f5f 0%, #1f5f8b 55%, #1a7f8e 100%);
+    color: #fff;
+  }
+  .top img {
+    width: 40px;
+    height: 40px;
+    flex: 0 0 auto;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .25);
+  }
+  .marca { display: flex; flex-direction: column; flex: 1; min-width: 0; line-height: 1.2; }
+  .marca strong { font-size: 16px; letter-spacing: .01em; }
+  .marca span { font-size: 11.5px; opacity: .8; }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 9px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .14);
+    font-size: 11px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .chip::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #b8c4cf; }
+  .chip.on::before { background: #5ee0b0; box-shadow: 0 0 0 3px rgba(94, 224, 176, .25); }
+
+  /* Pestañas */
+  .tabs {
+    display: flex;
+    gap: 2px;
+    padding: 0 10px;
+    background: var(--card);
+    border-bottom: 1px solid var(--line);
+  }
+  .tabs button {
+    flex: 1;
+    margin: 0;
+    padding: 10px 6px 9px;
+    border: 0;
+    border-bottom: 3px solid transparent;
+    border-radius: 0;
+    background: none;
+    color: var(--muted);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    width: auto;
+  }
+  .tabs button:hover { color: var(--ink); }
+  .tabs button[aria-selected="true"] { color: var(--brand); border-bottom-color: var(--brand); }
+
+  main { padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+  .panel { display: flex; flex-direction: column; gap: 10px; }
+  .panel[hidden] { display: none; }
+
+  /* Tarjetas */
+  .card {
+    padding: 13px 14px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--card);
+  }
+  .card.destacada { border-color: color-mix(in srgb, var(--brand) 35%, var(--line)); }
+  h2 {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin: 0 0 8px;
+    font-size: 13.5px;
+    letter-spacing: .01em;
+  }
+  h2 svg { width: 16px; height: 16px; color: var(--brand); flex: 0 0 auto; }
   p { margin: 4px 0; }
   .muted { color: var(--muted); }
   .warn { color: var(--warn); }
   .ok { color: var(--ok); }
   .bad { color: var(--bad); }
-  button { font: inherit; width: 100%; margin-top: 8px; padding: 8px 10px; border-radius: 7px; border: 1px solid var(--line); background: transparent; color: inherit; cursor: pointer; font-weight: 600; }
-  button.primary { background: var(--brand); border-color: var(--brand); color: #fff; }
-  button:disabled { opacity: .5; cursor: default; }
-  textarea { width: 100%; box-sizing: border-box; height: 120px; margin-top: 8px; font: 11px/1.3 ui-monospace, Consolas, monospace; }
-  #resultado:empty { display: none; }
-  label { display: block; margin-top: 8px; font-weight: 600; }
-  label input, label select { display: block; width: 100%; box-sizing: border-box; margin-top: 3px; padding: 6px 8px; font: inherit; border: 1px solid var(--line); border-radius: 6px; background: transparent; color: inherit; }
+  .nota { margin-top: 10px; font-size: 11.5px; color: var(--muted); }
+
+  /* Estado (los scripts cambian la clase del elemento interior) */
+  .estado > div, .estado > p:first-child {
+    padding: 8px 10px;
+    border-radius: 9px;
+    background: var(--bg);
+  }
+  .estado .ok { background: var(--ok-soft); }
+  .estado .warn { background: var(--warn-soft); }
+  .estado .bad { background: var(--bad-soft); }
+  #pendiente p { margin: 2px 0; }
+  #pagDetalle { margin-top: 6px; font-size: 11.5px; }
+
+  /* Botones */
+  button {
+    width: 100%;
+    margin-top: 8px;
+    padding: 9px 12px;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    background: var(--card);
+    color: var(--ink);
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background .12s, border-color .12s, opacity .12s;
+  }
+  button:hover:not(:disabled) { border-color: var(--brand); color: var(--brand); }
+  button.primary {
+    border: 0;
+    background: linear-gradient(120deg, var(--brand), var(--brand-2));
+    color: #fff;
+  }
+  button.primary:hover:not(:disabled) { color: #fff; filter: brightness(1.07); }
+  @media (prefers-color-scheme: dark) { button.primary, button.primary:hover:not(:disabled) { color: #0d1a24; } }
+  button:disabled { opacity: .45; cursor: default; }
+  button.link {
+    width: auto;
+    margin: 8px auto 0;
+    padding: 2px 4px;
+    border: 0;
+    background: none;
+    color: var(--muted);
+    font-weight: 600;
+    font-size: 12px;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    display: block;
+  }
+  button.link:hover:not(:disabled) { color: var(--bad); }
+  button.chico { width: auto; margin-top: 8px; padding: 5px 10px; font-size: 12px; }
+  .acciones { display: flex; gap: 8px; }
+  .acciones button { flex: 1; }
+
+  /* Formularios */
+  label { display: block; margin-top: 9px; font-weight: 600; font-size: 12px; color: var(--muted); }
+  label input, label select {
+    display: block;
+    width: 100%;
+    margin-top: 4px;
+    padding: 7px 9px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--card);
+    color: var(--ink);
+    font: inherit;
+  }
+  label input:focus, label select:focus { outline: 2px solid color-mix(in srgb, var(--brand) 45%, transparent); border-color: var(--brand); }
+  /* La lista desplegable nativa se pinta blanca en Windows: sin esto, en
+     modo oscuro las opciones no seleccionadas quedan blancas sobre blanco. */
+  select option { color: #111827; background-color: #ffffff; }
+  .historial { white-space: pre-line; font: 11px/1.5 ui-monospace, Consolas, monospace; margin-top: 6px; }
+  /* Buscador de clientes */
+  .resultados:empty { display: none; }
+  .resultados { margin-top: 6px; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; }
+  .resultados button {
+    display: flex; flex-direction: column; align-items: flex-start; gap: 1px;
+    margin: 0; border: 0; border-bottom: 1px solid var(--line); border-radius: 0;
+    padding: 8px 10px; text-align: left; font-weight: 600;
+  }
+  .resultados button:last-child { border-bottom: 0; }
+  .resultados button small { color: var(--muted); font-weight: 500; font-size: 11.5px; }
+  .resultados button.sel { background: var(--brand-soft); }
   .fila { display: flex; gap: 8px; }
   .fila > label { flex: 1; }
-  progress { width: 100%; height: 8px; margin-top: 6px; }
+  progress { width: 100%; height: 8px; margin-top: 8px; accent-color: var(--brand); }
+  textarea {
+    width: 100%;
+    height: 120px;
+    margin-top: 8px;
+    padding: 8px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--bg);
+    color: var(--ink);
+    font: 11px/1.3 ui-monospace, Consolas, monospace;
+  }
+
+  /* Resultado del Formulario 120 */
+  #resultado:empty { display: none; }
+  #resultado h2 { margin-bottom: 6px; }
+  #resultado p { padding: 6px 9px; border-radius: 8px; margin: 4px 0; }
+  #resultado p.ok { background: var(--ok-soft); }
+  #resultado p.warn { background: var(--warn-soft); }
+  #resultado p.bad { background: var(--bad-soft); }
+
+  details.card > summary { cursor: pointer; font-weight: 700; font-size: 13.5px; list-style: none; display: flex; align-items: center; gap: 7px; }
+  details.card > summary::-webkit-details-marker { display: none; }
+  details.card > summary::after { content: "▾"; margin-left: auto; color: var(--muted); transition: transform .15s; }
+  details.card[open] > summary::after { transform: rotate(180deg); }
+  details.card > summary svg { width: 16px; height: 16px; color: var(--brand); }
+  details.card[open] > summary { margin-bottom: 6px; }
+
+  .pie {
+    padding: 2px 16px 12px;
+    color: var(--muted);
+    font-size: 11px;
+    text-align: center;
+  }
 </style>
 </head>
 <body>
-  <header><img src="logo.png" alt=""><strong>Ekuatia Login PRUEBAS</strong></header>
-
-  <section>
-    <h2>Página actual</h2>
-    <div id="pagEstado" class="muted">Reconociendo…</div>
-    <p id="pagDetalle" class="muted" hidden></p>
-    <button id="pagReconocer">Reconocer de nuevo</button>
-  </section>
-
-  <section>
-    <h2>Formulario 120</h2>
-    <div id="pendiente" class="muted">Cargando…</div>
-    <button id="seleccionar" disabled>Elegir IVA y período</button>
-    <button id="completar" class="primary" disabled>Completar formulario</button>
-    <button id="descartar" disabled>Descartar datos</button>
-  </section>
-
-  <section id="resultado"></section>
-
-  <section>
-    <h2>Descargar formularios IVA</h2>
-    <div id="descEstado" class="muted">Sin descarga en curso.</div>
-    <progress id="descProgreso" max="1" value="0" hidden></progress>
-    <div id="descForm">
-      <label>Períodos
-        <select id="descModo">
-          <option value="1">Último mes</option>
-          <option value="3">Últimos 3 meses</option>
-          <option value="6" selected>Últimos 6 meses</option>
-          <option value="12">Últimos 12 meses</option>
-          <option value="rango">Rango de meses…</option>
-        </select>
-      </label>
-      <div id="descRango" class="fila" hidden>
-        <label>Desde <input type="month" id="descDesde"></label>
-        <label>Hasta <input type="month" id="descHasta"></label>
-      </div>
-      <label>RUC del cliente (para el nombre del archivo, opcional)
-        <input id="descRuc" inputmode="numeric" maxlength="14" placeholder="80012345">
-      </label>
-      <div class="fila">
-        <label>Prefijo <input id="descPrefijo" maxlength="12" value="IVA"></label>
-        <label>Demora (s) <input id="descDemora" type="number" min="1" max="10" value="4"></label>
-      </div>
+  <header class="top">
+    <img src="icono-128.png" alt="MJ">
+    <div class="marca">
+      <strong>Extensión PRUEBAS</strong>
+      <span>MJ Estudio Contable</span>
     </div>
-    <button id="descIniciar" class="primary" disabled>Descargar formularios</button>
-    <button id="descCancelar" disabled>Cancelar descarga</button>
-    <p class="muted">Abrí esta ventana con la sesión del cliente iniciada en Marangatu. Por cada formulario se abre el diálogo de impresión: elegí <b>Guardar como PDF</b>.</p>
-  </section>
+    <span id="chipMarangatu" class="chip">…</span>
+  </header>
 
-  <section>
-    <h2>Relevamiento de navegación</h2>
-    <p class="muted">Mapea las pantallas de Marangatu: iniciá el registro, navegá normalmente por el recorrido y marcá las páginas clave (por ejemplo «madre»). Registra la estructura (menús, botones, rutas) y nunca valores de campos; el texto dentro de tablas se omite. Revisá el listado antes de compartirlo: un botón o enlace fuera de una tabla podría llevar un nombre.</p>
-    <div id="relEstado" class="muted">Registro detenido.</div>
-    <button id="relIniciar" class="primary">Iniciar registro</button>
-    <button id="relDetener" disabled>Detener registro</button>
-    <label>Marcar la página actual como…
-      <input id="relMarca" maxlength="40" placeholder="madre, vision-integral, lista-ddjj">
-    </label>
-    <button id="relMarcar" disabled>Marcar página actual</button>
-    <button id="relCopiar">Copiar listado</button>
-    <button id="relBorrar">Borrar registro</button>
-    <textarea id="relTexto" readonly hidden></textarea>
-  </section>
+  <nav class="tabs" role="tablist" aria-label="Secciones">
+    <button type="button" role="tab" data-tab="inicio" aria-selected="true">Inicio</button>
+    <button type="button" role="tab" data-tab="descargas" aria-selected="false">Descargas</button>
+    <button type="button" role="tab" data-tab="herramientas" aria-selected="false">Herramientas</button>
+  </nav>
 
-  <section>
-    <h2>Relevamiento</h2>
-    <p class="muted">Abrí el Formulario 120 en Marangatu (sin datos de clientes) y generá el listado de campos para configurar la carga automática. No incluye valores ni contraseñas.</p>
-    <button id="relevar">Relevar formulario</button>
-    <div id="relevamiento" hidden>
-      <textarea id="relevamientoTexto" readonly></textarea>
-      <button id="copiarRelevamiento">Copiar listado</button>
+  <main>
+    <!-- ── Inicio ───────────────────────────────────────────────── -->
+    <div class="panel" data-panel="inicio" role="tabpanel">
+      <section class="card destacada">
+        <h2>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          Entrar a Marangatu
+        </h2>
+        <label>Cliente (nombre o RUC)
+          <input id="busQ" type="search" autocomplete="off" spellcheck="false" placeholder="Buscar en Control Clientes">
+        </label>
+        <div id="busResultados" class="resultados" role="listbox" aria-label="Clientes encontrados"></div>
+        <p id="busEstado" class="nota">Busca entre tus clientes de Control Clientes (tiene que estar abierta en una pestaña). La clave no pasa por la extensión.</p>
+      </section>
+
+      <section class="card destacada">
+        <h2>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></svg>
+          Formulario 120
+        </h2>
+        <div class="estado"><div id="pendiente" class="muted">Cargando…</div></div>
+        <button id="completar" class="primary" disabled>Completar formulario</button>
+        <button id="seleccionar" disabled>Elegir IVA y período</button>
+        <button id="descartar" class="link" disabled>Descartar datos</button>
+      </section>
+
+      <section id="resultado" class="card"></section>
+
+      <section class="card">
+        <h2>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></svg>
+          Página actual
+        </h2>
+        <div class="estado"><div id="pagEstado" class="muted">Reconociendo…</div></div>
+        <p id="pagDetalle" class="muted" hidden></p>
+        <button id="pagReconocer" class="chico">Reconocer de nuevo</button>
+      </section>
     </div>
-  </section>
+
+    <!-- ── Descargas ────────────────────────────────────────────── -->
+    <div class="panel" data-panel="descargas" role="tabpanel" hidden>
+      <section class="card destacada">
+        <h2>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+          Descargar formularios IVA
+        </h2>
+        <div class="estado"><div id="descEstado" class="muted">Sin descarga en curso.</div></div>
+        <progress id="descProgreso" max="1" value="0" hidden></progress>
+        <div id="descForm">
+          <label>Períodos
+            <select id="descModo">
+              <option value="1">Último mes</option>
+              <option value="3">Últimos 3 meses</option>
+              <option value="6" selected>Últimos 6 meses</option>
+              <option value="12">Últimos 12 meses</option>
+              <option value="rango">Rango de meses…</option>
+            </select>
+          </label>
+          <div id="descRango" class="fila" hidden>
+            <label>Desde <input type="month" id="descDesde"></label>
+            <label>Hasta <input type="month" id="descHasta"></label>
+          </div>
+          <label>RUC del cliente (para el nombre del archivo, opcional)
+            <input id="descRuc" inputmode="numeric" maxlength="14" placeholder="80012345">
+          </label>
+          <div class="fila">
+            <label>Prefijo <input id="descPrefijo" maxlength="12" value="IVA"></label>
+            <label>Demora (s) <input id="descDemora" type="number" min="1" max="10" value="4"></label>
+          </div>
+        </div>
+        <div class="acciones">
+          <button id="descCancelar" disabled>Cancelar</button>
+          <button id="descIniciar" class="primary" disabled>Descargar</button>
+        </div>
+        <p class="nota">Abrí esta ventana con la sesión del cliente iniciada en Marangatu. Por cada formulario se abre el diálogo de impresión: elegí <b>Guardar como PDF</b>.</p>
+      </section>
+
+      <section class="card">
+        <h2>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M10 13l-2 2 2 2M14 13l2 2-2 2"/></svg>
+          Descarga directa de XML (eKuatia)
+        </h2>
+        <p class="muted">Clave del servicio de captcha para bajar XML desde Control Clientes sin el worker. Se guarda solo en esta extensión.</p>
+        <label>Clave del servicio
+          <input id="dirClave" type="password" autocomplete="off" placeholder="Pegá la clave">
+        </label>
+        <button id="dirGuardar" class="primary">Guardar clave</button>
+        <div class="estado"><div id="dirEstado" class="muted">Sin clave configurada.</div></div>
+        <label>Ritmo de descarga (para medir tiempos)
+          <select id="dirPerfil">
+            <option value="actual">Actual: 1 token a la vez · pausa 2 s</option>
+            <option value="prudente">Prudente rápido: 3 tokens en vuelo · pausa 2 s</option>
+            <option value="rapido">Rápido: 6 tokens en vuelo · pausa 0,5 s</option>
+            <option value="fondo">A fondo: todos los tokens · sin pausa</option>
+          </select>
+        </label>
+        <div id="dirPerfilEstado" class="muted"></div>
+        <div id="dirUltimaCorrida" class="muted">Sin corridas registradas en esta sesión del navegador.</div>
+        <p class="nota"><b>Bitácora de mediciones</b> (últimas 20 corridas; queda guardada en esta PC aunque cierres Chrome):</p>
+        <div id="dirHistorial" class="historial muted">Bitácora vacía.</div>
+        <div class="acciones">
+          <button id="dirCopiarHistorial">Copiar resumen</button>
+          <button id="dirBorrarHistorial">Borrar bitácora</button>
+        </div>
+        <div id="dirHistorialEstado" class="muted"></div>
+      </section>
+    </div>
+
+    <!-- ── Herramientas ─────────────────────────────────────────── -->
+    <div class="panel" data-panel="herramientas" role="tabpanel" hidden>
+      <p class="muted" style="margin: 0 2px">Herramientas para configurar la extensión. No hacen falta en el uso diario.</p>
+
+      <details class="card" id="cardRelNav">
+        <summary>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h12"/></svg>
+          Relevamiento de navegación
+        </summary>
+        <p class="muted">Mapea las pantallas de Marangatu: iniciá el registro, navegá normalmente por el recorrido y marcá las páginas clave (por ejemplo «madre»). Registra la estructura (menús, botones, rutas) y nunca valores de campos; el texto dentro de tablas se omite. Revisá el listado antes de compartirlo: un botón o enlace fuera de una tabla podría llevar un nombre.</p>
+        <div class="estado"><div id="relEstado" class="muted">Registro detenido.</div></div>
+        <div class="acciones">
+          <button id="relIniciar" class="primary">Iniciar registro</button>
+          <button id="relDetener" disabled>Detener</button>
+        </div>
+        <label>Marcar la página actual como…
+          <input id="relMarca" maxlength="40" placeholder="madre, vision-integral, lista-ddjj">
+        </label>
+        <button id="relMarcar" disabled>Marcar página actual</button>
+        <div class="acciones">
+          <button id="relCopiar">Copiar listado</button>
+          <button id="relBorrar">Borrar registro</button>
+        </div>
+        <textarea id="relTexto" readonly hidden></textarea>
+      </details>
+
+      <details class="card" id="cardRelForm">
+        <summary>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          Relevamiento del Formulario 120
+        </summary>
+        <p class="muted">Abrí el Formulario 120 en Marangatu (sin datos de clientes) y generá el listado de campos para configurar la carga automática. No incluye valores ni contraseñas.</p>
+        <button id="relevar">Relevar formulario</button>
+        <div id="relevamiento" hidden>
+          <textarea id="relevamientoTexto" readonly></textarea>
+          <button id="copiarRelevamiento">Copiar listado</button>
+        </div>
+      </details>
+    </div>
+  </main>
+
+  <div class="pie"><span id="version"></span> · La extensión completa los datos; la declaración la presentás vos.</div>
 
   <script src="formulario120.js"></script>
   <script src="paginas.js"></script>
+  <script src="popupUi.js"></script>
   <script src="popup.js"></script>
   <script src="popupDescarga.js"></script>
+  <script src="popupDirecta.js"></script>
   <script src="popupRelevamiento.js"></script>
   <script src="popupPagina.js"></script>
+  <script src="popupBuscador.js"></script>
 </body>
 </html>

@@ -713,6 +713,53 @@ export const api = {
       request({ action: 'whaticketResponder', numero, texto, cliente, ruc }, { retries: 1, timeoutMs: 60000 }),
   },
 
+  // Lotes CDC para descarga de XML (AppsScript-CdcLotes.gs). El lote lo crea
+  // el recolector de Marangatu en la extensión; acá se registra en el
+  // backend y se listan los lotes conocidos.
+  cdc: {
+    crearLote: async (lote) => {
+      const data = await request({
+        action: 'cdcCrearLote',
+        loteLocalId: lote.id,
+        fuente: lote.fuente,
+        cdcs: lote.cdcs,
+      });
+      return data.lote || null;
+    },
+    listarLotes: async () => {
+      const data = await request({ action: 'cdcListarLotes' });
+      return Array.isArray(data.lotes) ? data.lotes : [];
+    },
+    // Nexo worker -> sistema: los XML descargados quedan en Drive y la
+    // pestaña XML / KuDE los trae por lote (ítems y contenido).
+    obtenerItems: async (loteId) => {
+      const data = await request({ action: 'cdcObtenerItems', loteId });
+      return Array.isArray(data.items) ? data.items : [];
+    },
+    obtenerXml: async (loteId, cdc) => {
+      const data = await request({ action: 'cdcObtenerXml', loteId, cdc });
+      return data.contenido || '';
+    },
+    // Registra un XML descargado por la vía directa: queda en Drive, el
+    // ítem pasa a «descargado» y el lote se cierra si no quedan pendientes.
+    subirXml: async (loteId, cdc, contenido) => {
+      const data = await request({ action: 'cdcSubirXml', loteId, cdc, contenido });
+      return data;
+    },
+    // Crea un lote nuevo en_cola con los CDCs reintentables del lote
+    // (captcha_fallido / error_descarga). No descarga nada por sí solo.
+    reintentarFallidos: async (loteId) => {
+      const data = await request({ action: 'cdcReintentarFallidos', loteId });
+      return data;
+    },
+    // Borra el lote y sus ítems del backend (no toca Drive). Para limpiar
+    // la cola y registros viejos desde Configuración.
+    borrarLote: async (loteId) => {
+      const data = await request({ action: 'cdcBorrarLote', loteId });
+      return data;
+    },
+  },
+
   // Marcaciones: horarios y datos procesados/ajustes mensuales se guardan en el servidor;
   // el archivo .dat original se procesa localmente y no se envía.
   marcaciones: {

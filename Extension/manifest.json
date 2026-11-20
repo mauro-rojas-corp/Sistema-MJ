@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Ekuatia Login",
-  "version": "2.13",
+  "version": "2.22",
   "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyMDranhrfclMlSvYWS0T7Pdol3hCXB3+hQxQge2X0ActDUa7Y8Mo7CrSa3BkdJMJFtpIl3yfArXmw30jzmffSuUy7YhshauOwtWrmkbpYWzAdn731BzN2AmnFyR/IuzRA550En+djM+CTy0OTkGrcyqFQgaU+tL0u3vTZ1YaBHcpBdylGWV7t4yglkgVY3HfcRtN+vRfImIyB0fNAXT0vRU5iUDvVN3TQDfFnPq/B3ECR8WYL1TUkgjTauREZBydgPdMk/NgkFaZVyZhZzSbJeu13oxQYOKoxEAj2znPea/tYv/nXcgFW0Sy7ggSwbwR460yKyV/gRYzHSipSEoEIwIDAQAB",
   "description": "Puente de Control Clientes: login y Formulario 120 en Marangatu, descarga de formularios IVA y envío de la ficha por WhatsApp Web",
   "permissions": [
@@ -12,7 +12,9 @@
   ],
   "host_permissions": [
     "https://marangatu.set.gov.py/*",
-    "https://web.whatsapp.com/*"
+    "https://ekuatia.set.gov.py/*",
+    "https://web.whatsapp.com/*",
+    "https://api.capsolver.com/*"
   ],
   "background": {
     "service_worker": "background.js"
@@ -33,11 +35,19 @@
     "48": "icono-48.png",
     "128": "icono-128.png"
   },
+  "web_accessible_resources": [
+    {
+      "resources": ["asistente-logo.png"],
+      "matches": ["https://marangatu.set.gov.py/*"]
+    }
+  ],
   "externally_connectable": {
     "matches": [
       "http://localhost/*",
-      "https://control-total-clientes.vercel.app/*",
-      "https://sistema-mj.vercel.app/*"
+      "https://mjsistema.vercel.app/*",
+      "https://control-total-clientes-iva.vercel.app/*",
+      "https://sistema-mj.vercel.app/*",
+      "https://sistema-mj-blue.vercel.app/*"
     ]
   },
   "content_scripts": [
@@ -49,7 +59,26 @@
         "descargaContent.js",
         "paginas.js",
         "relevamientoNav.js",
-        "panelContent.js"
+        "panelContent.js",
+        "recolectorCdcCore.js",
+        "recolectorCdcPagina.js",
+        "recolectorCdcLotes.js",
+        "recolectorCdcUi.js",
+        "asistenteMj.js"
+      ],
+      "css": [
+        "asistenteMj.css"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://ekuatia.set.gov.py/consultas*"
+      ],
+      "js": [
+        "recolectorCdcCore.js",
+        "ekuatiaPagina.js",
+        "ekuatiaUi.js"
       ],
       "run_at": "document_idle"
     },
