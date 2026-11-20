@@ -1861,7 +1861,7 @@
   }
 
   .real-exec-mobile-tabs button {
-    /* Hasta 4 pestañas (Estadísticas, Clientes, IVA, Asignar) en 360px. */
+    /* 4 pestañas fijas (el resto va en el menú ☰ de arriba) en 360px. */
     min-width: 0;
     max-width: 120px;
     display: flex;
@@ -1902,6 +1902,89 @@
   .real-exec-mobile-tabs button.is-active {
     color: var(--rx-brand-dark);
     background: var(--rx-brand-soft);
+  }
+
+  /* Menú ☰ arriba a la izquierda: secciones que no entran en la barra inferior. */
+  .real-exec-menu-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    min-height: 36px;
+    margin-right: auto;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.11);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.045);
+    color: #d2d3d6;
+    cursor: pointer;
+  }
+  /* Con ambientación, la píldora del saludo queda al lado del ☰. */
+  .real-exec-menu-button:has(~ .rx-amb-pill) {
+    margin-right: 0;
+  }
+  .real-exec-menu-button.is-active {
+    border-color: rgba(111, 165, 195, 0.55);
+    background: rgba(111, 165, 195, 0.16);
+    color: #9fc4d8;
+  }
+  .real-exec-mobile-mas-fondo {
+    position: fixed;
+    z-index: 138;
+    inset: 0;
+    background: rgba(15, 18, 22, 0.32);
+  }
+  .real-exec-mobile-mas {
+    position: fixed;
+    z-index: 139;
+    top: calc(66px + var(--safe-area-inset-top, env(safe-area-inset-top, 0px)));
+    left: 8px;
+    width: min(320px, calc(100vw - 16px));
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 6px;
+    border: 1px solid var(--rx-line);
+    border-radius: 16px;
+    background: var(--rx-surface);
+    box-shadow: 0 12px 30px rgba(28, 31, 35, 0.22);
+  }
+  .real-exec-mobile-mas button {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 11px 12px;
+    border: 0;
+    border-radius: 11px;
+    background: transparent;
+    color: var(--rx-ink, inherit);
+    cursor: pointer;
+    font: inherit;
+    text-align: left;
+  }
+  .real-exec-mobile-mas button svg {
+    flex: 0 0 auto;
+    color: var(--rx-subtle);
+  }
+  .real-exec-mobile-mas button span {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .real-exec-mobile-mas button strong {
+    font-size: var(--rx-fs-sm, 14px);
+  }
+  .real-exec-mobile-mas button small {
+    color: var(--rx-subtle);
+    font-size: var(--rx-fs-xs, 12px);
+  }
+  .real-exec-mobile-mas button.is-active {
+    color: var(--rx-brand-dark);
+    background: var(--rx-brand-soft);
+  }
+  .real-exec-mobile-mas button.is-active svg {
+    color: var(--rx-brand-dark);
   }
 
   .real-exec-screen,

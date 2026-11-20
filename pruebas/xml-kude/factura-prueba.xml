@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rDE xmlns="http://ekuatia.set.gov.py/sifen/xsd">
+  <DE Id="01800281163001001000123412024011511234567890">
+    <dDVId>0</dDVId>
+    <dFecFirma>2024-01-15T10:30:00</dFecFirma>
+    <gOpeDE><iTiDE>1</iTiDE><dDesTiDE>Factura electrónica</dDesTiDE><dNumTim>17234567</dNumTim><dFeIniT>2024-01-01</dFeIniT></gOpeDE>
+    <gDatGralOpe>
+      <dFeEmiDE>2024-01-15T10:25:00</dFeEmiDE><dEst>001</dEst><dPunExp>001</dPunExp><dNumDoc>0001234</dNumDoc>
+      <gOpeCom><iTipTra>1</iTipTra><iTImp>1</iTImp><cMoneOpe>PYG</cMoneOpe></gOpeCom>
+      <gEmi>
+        <dRucEm>80028116</dRucEm><dDVEmi>3</dDVEmi><dNomEmi>EMPRESA DE PRUEBA S.A.</dNomEmi><dNomFanEmi>PRUEBA</dNomFanEmi>
+        <dDirEmi>Avda. Mariscal López 1234</dDirEmi><dNumCas>1234</dNumCas><dDesCiuEmi>Asunción</dDesCiuEmi><dDesDepEmi>Capital</dDesDepEmi>
+        <dTelEmi>021123456</dTelEmi><dEmailE>facturacion@prueba.com.py</dEmailE><cActEco>47190</cActEco><dDesActEco>VENTA AL POR MENOR</dDesActEco>
+      </gEmi>
+      <gDatRec>
+        <dRucRec>80012345</dRucRec><dDVRec>7</dDVRec><dNomRec>CLIENTE DE PRUEBA S.A.</dNomRec>
+        <dDirRec>Calle Palma 456</dDirRec><dDesCiuRec>Asunción</dDesCiuRec>
+      </gDatRec>
+    </gDatGralOpe>
+    <gDtipDE><gCamItem>
+      <dCodInt>PROD-001</dCodInt><dDesProSer>Producto de prueba IVA 10%</dDesProSer><cUniMed>77</cUniMed><dDesUniMed>UNI</dDesUniMed>
+      <dCantCodInt>2</dCantCodInt><dPUniProSer>55000</dPUniProSer><dDescItem>0</dDescItem>
+      <gValorItem><gValorRestaItem><dDescItem>0</dDescItem></gValorRestaItem></gValorItem>
+      <gCamIVA><iAfecIVA>1</iAfecIVA><dTasaIVA>10</dTasaIVA></gCamIVA>
+    </gCamItem>
+    <gCamItem>
+      <dCodInt>PROD-002</dCodInt><dDesProSer>Producto de prueba IVA 5%</dDesProSer><cUniMed>77</cUniMed><dDesUniMed>UNI</dDesUniMed>
+      <dCantCodInt>1</dCantCodInt><dPUniProSer>21000</dPUniProSer><dDescItem>0</dDescItem>
+      <gCamIVA><iAfecIVA>1</iAfecIVA><dTasaIVA>5</dTasaIVA></gCamIVA>
+    </gCamItem></gDtipDE>
+    <gTotSub>
+      <dSubExe>0</dSubExe><dSub5>21000</dSub5><dSub10>110000</dSub10>
+      <dTotOpe>131000</dTotOpe><dTotDesc>0</dTotDesc><dRedon>0</dRedon><dTotGralOpe>131000</dTotGralOpe><dTotalGs>131000</dTotalGs>
+      <dBaseGrav5>20000</dBaseGrav5><dBaseGrav10>100000</dBaseGrav10><dIVA5>1000</dIVA5><dIVA10>10000</dIVA10><dTotIVA>11000</dTotIVA>
+    </gTotSub>
+    <gCamGen><dCarQR>https://ekuatia.set.gov.py/consultas/qr?nVersion=150&amp;Id=01800281163001001000123412024011511234567890&amp;dFeEmiDE=2024-01-15T10:25:00</dCarQR></gCamGen>
+  </DE>
+</rDE>

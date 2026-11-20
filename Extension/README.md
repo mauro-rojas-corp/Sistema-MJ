@@ -203,7 +203,9 @@ La extensión admite mensajes sólo desde estos orígenes exactos:
   `http://localhost/*` porque los patrones de Chrome no aceptan puertos, pero
   el service worker vuelve a validar el origen completo y rechaza cualquier
   otro puerto.
-- `https://control-total-clientes.vercel.app/` (app publicada en Vercel).
+- `https://control-total-clientes-iva.vercel.app/` y `https://sistema-mj.vercel.app/`.
+- `https://sistema-mj-blue.vercel.app/` (app unificada, desde la 2.17).
+- `https://mjsistema.vercel.app/` (app publicada con la cuenta nueva, desde la 2.22).
 
 Los deploys de vista previa de Vercel (un subdominio distinto en cada deploy)
 quedan afuera a propósito: la extensión sólo funciona desde la dirección de
@@ -292,6 +294,42 @@ Fuera de Marangatu», y tres pestañas: **Inicio** (Formulario 120 y página
 actual), **Descargas** (formularios IVA) y **Herramientas** (relevamientos,
 plegados). Claro y oscuro según el sistema. Los IDs de los controles no
 cambiaron: `popupUi.js` sólo maneja las pestañas, el indicador y la versión.
+
+## Buscador de clientes y botón «Comprobantes» (v2.16)
+
+Integra lo útil de dos extensiones sueltas («Ekuatia Login» con CSV y
+«Marangatu Helper»), sin sus partes inseguras o repetidas.
+
+- **Entrar a Marangatu (popup → Inicio):** se busca un cliente por nombre o
+  RUC y, al elegirlo, se entra con su Clave MH. **No hay CSV ni claves en la
+  extensión:** el popup pregunta a Control Clientes, que tiene que estar
+  abierta en una pestaña con sesión y un mes elegido. La app mantiene un
+  puerto `eku-buscador` (`src/components/BuscadorMarangatu.jsx`) y
+  `buscadorBg.js` le reenvía las preguntas del popup (`popupBuscador.js`):
+  - `buscar` → la app responde hasta 8 clientes de **su** lista (los que esa
+    persona ve), sólo nombre, RUC y si tiene clave.
+  - `entrar` → la app confirma el RUC de la fila y hace lo mismo que el botón
+    Marangatu de la fila (`APP_AUTO_LOGIN`). La clave va de la app al login
+    por el camino de siempre; nunca pasa por el popup ni se guarda.
+  El puerto valida el origen igual que el resto del puente.
+- **Asistente MJ en Marangatu (`asistenteMj.js/.css`, v2.18):** botón
+  redondo con el logo de MJ, abajo a la izquierda (el panel de tareas va a la
+  derecha). Abre un menú «¿A dónde vamos?» con: **Obtener comprobantes**
+  (Declaraciones Informativas → Gestión de Comprobantes → Obtener Comprob.
+  Elect. y Virtuales; cada ventana nueva retoma el paso; ahí, elegir mes y
+  año busca con un clic), **Visión integral** (Consultas), **Presentar
+  declaración** y **Menú principal**. Desde otra pantalla vuelve primero al
+  menú principal y sigue solo. Se arrastra, se bloquea y cambia de tamaño
+  (engranaje). Desde la 2.19 los íconos son SVG en línea (trazos de Lucide)
+  con animaciones CSS al pasar el mouse; nada de emojis. Desde la 2.20 el
+  botón es sólo el logo (`asistente-logo.png`: el ícono sin su cuadro blanco,
+  sin borde ni sombra) y los nombres internos usan el prefijo `mjas-`/`mjas_`
+  para no chocar con el Marangatu Helper original si sigue instalado. El logo se carga desde la extensión (`web_accessible_resources`, sólo
+  para Marangatu). Los CDC se marcan con la
+  columna **XML** del recolector: el «Extraer / Procesar KuDE» del helper
+  original no se integró (repetía el recolector, y el proceso de KuDE no
+  funcionaba entre Marangatu y eKuatia).
+- No se integraron: el CSV con contraseñas ni el script de AutoHotkey.
 
 ## Simulador del flujo (pruebas)
 

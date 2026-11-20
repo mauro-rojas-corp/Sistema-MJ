@@ -1,0 +1,1014 @@
+/* Asistente MJ (asistenteMj.js). Base de Marangatu Helper; al final, lo propio del asistente (v2.18). */
+
+/* Botón flotante: círculo blanco con el logo de MJ centrado (sin borde).
+   Una sombra gris suave para que se vea sobre fondos blancos. */
+#mjas-widget-toggle {
+  position: fixed;
+  z-index: 999999;
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.18);
+  outline: none;
+  cursor: grab;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  user-select: none;
+  -webkit-user-select: none;
+}
+#mjas-widget-toggle img {
+  display: block;
+  width: 72%;
+  height: 72%;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+}
+#mjas-widget-toggle:hover { transform: scale(1.08); box-shadow: 0 4px 14px rgba(15, 23, 42, 0.24); }
+#mjas-widget-toggle:active { transform: scale(0.97); }
+#mjas-widget-toggle:focus-visible { outline: 2px solid #1f5f8b; outline-offset: 3px; border-radius: 12px; }
+
+#mjas-widget {
+  position: fixed;
+  z-index: 999998;
+  width: 320px;
+  max-height: 80vh;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  display: none;
+  animation: maraSlideIn 0.2s ease;
+}
+
+#mjas-widget.mjas-open {
+  display: flex;
+  flex-direction: column;
+}
+
+@keyframes maraSlideIn {
+  from { opacity: 0; transform: translateY(-8px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.mjas-header {
+  background: linear-gradient(90deg, #059669, #0d9488);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+
+.mjas-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mjas-header-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.mjas-config-btn {
+  background: rgba(255,255,255,0.1);
+  border: none;
+  border-radius: 6px;
+  width: 26px;
+  height: 26px;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s;
+}
+
+.mjas-config-btn:hover {
+  background: rgba(255,255,255,0.2);
+}
+
+.mjas-header-title {
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+  margin: 0;
+}
+
+.mjas-close-btn {
+  background: rgba(255,255,255,0.15);
+  border: none;
+  border-radius: 6px;
+  color: white;
+  width: 24px;
+  height: 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  transition: background 0.15s;
+}
+
+.mjas-close-btn:hover {
+  background: rgba(255,255,255,0.25);
+}
+
+.mjas-context-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px;
+  background: #0f172a;
+  border-bottom: 1px solid #334155;
+  font-size: 10px;
+}
+
+.mjas-ctx-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.mjas-ctx-label {
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.mjas-body {
+  padding: 14px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.mjas-step-label {
+  color: #94a3b8;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin: 0 0 10px 0;
+}
+
+/* Year bar - todo clickeable */
+.mjas-year-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.mjas-year-bar:hover {
+  background: rgba(99, 102, 241, 0.2);
+  border-color: rgba(99, 102, 241, 0.45);
+}
+
+.mjas-year-bar-text {
+  font-size: 13px;
+  color: #a5b4fc;
+}
+
+.mjas-year-bar-text strong {
+  color: #818cf8;
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.mjas-year-bar-arrow {
+  color: #64748b;
+  font-size: 11px;
+  transition: color 0.15s;
+}
+
+.mjas-year-bar:hover .mjas-year-bar-arrow {
+  color: #a5b4fc;
+}
+
+/* Context bar */
+.mjas-context {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+}
+
+.mjas-context-icon {
+  font-size: 14px;
+}
+
+.mjas-context-text {
+  flex: 1;
+  font-size: 12px;
+  color: #a5b4fc;
+}
+
+.mjas-context-text strong {
+  color: #818cf8;
+  font-weight: 700;
+}
+
+/* Menu buttons */
+.mjas-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mjas-menu-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: #334155;
+  border: 1px solid #475569;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: left;
+}
+
+.mjas-menu-btn:hover {
+  background: #475569;
+  border-color: #10b981;
+  transform: translateX(4px);
+}
+
+.mjas-menu-icon {
+  font-size: 20px;
+}
+
+.mjas-menu-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: white;
+}
+
+/* Month/Year grids */
+.mjas-chosen {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+}
+
+.mjas-chosen-label {
+  color: #94a3b8;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.mjas-chosen-value {
+  color: #34d399;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.mjas-month-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.mjas-month-btn {
+  padding: 12px 4px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s;
+  background: #334155;
+  color: #cbd5e1;
+}
+
+.mjas-month-btn:hover {
+  background: #10b981;
+  color: white;
+  box-shadow: 0 3px 12px rgba(16, 185, 129, 0.35);
+  transform: scale(1.06);
+}
+
+.mjas-month-btn.last-used {
+  border: 2px solid #818cf8;
+  color: #a5b4fc;
+}
+
+.mjas-year-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+}
+
+.mjas-year-item {
+  padding: 10px 4px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.15s;
+  background: #334155;
+  color: #cbd5e1;
+}
+
+.mjas-year-item:hover, .mjas-year-item.selected {
+  background: #10b981;
+  color: white;
+  box-shadow: 0 3px 12px rgba(16, 185, 129, 0.35);
+  transform: scale(1.06);
+}
+
+/* Back button */
+.mjas-back-btn {
+  margin-top: 12px;
+  padding: 8px 12px;
+  background: transparent;
+  border: 1px solid #475569;
+  border-radius: 6px;
+  color: #94a3b8;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.mjas-back-btn:hover {
+  background: #334155;
+  color: white;
+}
+
+/* Status */
+.mjas-status {
+  border-radius: 10px;
+  padding: 12px 16px;
+  font-size: 13px;
+  text-align: center;
+  font-weight: 500;
+}
+
+.mjas-status.success {
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: #34d399;
+}
+
+.mjas-status.error {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #f87171;
+}
+
+.mjas-status.loading {
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  color: #93c5fd;
+}
+
+/* CDC List */
+.mjas-cdc-list {
+  margin: 12px 0;
+  max-height: 200px;
+  overflow-y: auto;
+  background: #0f172a;
+  border-radius: 8px;
+  padding: 8px;
+}
+
+.mjas-cdc-item {
+  display: flex;
+  gap: 8px;
+  padding: 6px 8px;
+  font-size: 11px;
+  border-bottom: 1px solid #1e293b;
+}
+
+.mjas-cdc-item:last-child {
+  border-bottom: none;
+}
+
+.mjas-cdc-code {
+  color: #818cf8;
+  font-size: 9px;
+  font-family: monospace;
+  flex-shrink: 0;
+}
+
+.mjas-cdc-num {
+  color: #a5b4fc;
+  flex: 1;
+  font-family: monospace;
+  font-size: 10px;
+}
+
+.mjas-cdc-total {
+  color: #34d399;
+  font-weight: 600;
+  text-align: right;
+  font-size: 10px;
+}
+
+/* Menu primary */
+.mjas-menu-btn-primary {
+  background: linear-gradient(90deg, #10b981, #0d9488) !important;
+  border-color: transparent !important;
+}
+
+.mjas-menu-btn-primary .mjas-menu-label {
+  color: white;
+}
+
+/* Flow steps */
+.mjas-flow-steps {
+  background: #0f172a;
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+}
+
+.mjas-flow-step {
+  color: #64748b;
+  font-size: 10px;
+  padding: 3px 0;
+  border-bottom: 1px solid #1e293b;
+}
+
+.mjas-flow-step:last-child {
+  border-bottom: none;
+}
+
+/* Divider */
+.mjas-divider {
+  height: 1px;
+  background: #334155;
+  margin: 10px 0;
+}
+
+/* CDC badge */
+.mjas-cdc-badge {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: 6px;
+  padding: 6px 10px;
+  margin-bottom: 8px;
+  font-size: 11px;
+  color: #34d399;
+}
+
+.mjas-cdc-badge-clear {
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  font-size: 12px;
+  padding: 0 2px;
+  transition: color 0.15s;
+}
+
+.mjas-cdc-badge-clear:hover {
+  color: #f87171;
+}
+
+/* Tool buttons (compact row) */
+.mjas-tools {
+  display: flex;
+  gap: 6px;
+}
+
+.mjas-tool-btn {
+  flex: 1;
+  padding: 9px 8px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid #475569;
+  background: #334155;
+  color: #cbd5e1;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: center;
+}
+
+.mjas-tool-btn:hover {
+  background: #475569;
+  color: white;
+}
+
+.mjas-tool-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.mjas-tool-primary {
+  background: linear-gradient(90deg, #10b981, #0d9488);
+  border: none;
+  color: white;
+  box-shadow: 0 2px 10px rgba(16, 185, 129, 0.25);
+}
+
+.mjas-tool-primary:hover {
+  box-shadow: 0 3px 14px rgba(16, 185, 129, 0.4);
+}
+
+/* Config panel */
+.mjas-config-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+  border-bottom: 1px solid #334155;
+}
+
+.mjas-config-item:last-of-type {
+  border-bottom: none;
+}
+
+.mjas-config-label {
+  font-size: 12px;
+  color: #cbd5e1;
+}
+
+.mjas-toggle {
+  background: #475569;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 11px;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.mjas-toggle:hover {
+  background: #64748b;
+  color: white;
+}
+
+.mjas-toggle.active {
+  background: #10b981;
+  color: white;
+}
+
+.mjas-size-btns {
+  display: flex;
+  gap: 4px;
+}
+
+.mjas-size-btn {
+  width: 32px;
+  height: 28px;
+  border: 1px solid #475569;
+  background: #334155;
+  border-radius: 6px;
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.mjas-size-btn:hover {
+  background: #475569;
+  color: white;
+}
+
+.mjas-size-btn.active {
+  background: #10b981;
+  border-color: #10b981;
+  color: white;
+}
+
+.mjas-reset-btn {
+  background: #475569;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 11px;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.mjas-reset-btn:hover {
+  background: #64748b;
+  color: white;
+}
+
+
+
+/* Navigation menu (otras páginas) */
+.mjas-nav-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(251, 191, 36, 0.1);
+  border: 1px solid rgba(251, 191, 36, 0.25);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  font-size: 12px;
+  color: #fbbf24;
+}
+
+.mjas-nav-icon {
+  font-size: 16px;
+}
+
+.mjas-nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  background: linear-gradient(135deg, #10b981, #0d9488);
+  border: none;
+  border-radius: 10px;
+  padding: 14px 16px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s;
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+}
+
+.mjas-nav-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+}
+
+.mjas-nav-btn-icon {
+  font-size: 24px;
+}
+
+.mjas-nav-btn-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mjas-nav-btn-text strong {
+  color: white;
+  font-size: 13px;
+}
+
+.mjas-nav-btn-text small {
+  color: rgba(255,255,255,0.7);
+  font-size: 10px;
+}
+
+.mjas-nav-steps {
+  margin-top: 12px;
+  background: #0f172a;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.mjas-nav-step {
+  font-size: 10px;
+  color: #64748b;
+  padding: 4px 0;
+  border-bottom: 1px solid #1e293b;
+}
+
+.mjas-nav-step:last-child {
+  border-bottom: none;
+}
+
+.mjas-nav-step.done {
+  color: #34d399;
+}
+
+.mjas-nav-step.done::before {
+  content: "";
+}
+
+.mjas-nav-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 20px;
+  text-align: center;
+  justify-content: center;
+  color: #93c5fd;
+  font-size: 12px;
+}
+
+.mjas-nav-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #334155;
+  border-top-color: #10b981;
+  border-radius: 50%;
+  animation: mjas-spin 0.8s linear infinite;
+}
+
+@keyframes mjas-spin {
+  to { transform: rotate(360deg); }
+}
+
+.mjas-cdc-more {
+  text-align: center;
+  color: #64748b;
+  font-size: 10px;
+  padding: 4px;
+}
+
+/* Actions */
+.mjas-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.mjas-action-btn {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid #475569;
+  background: #334155;
+  color: #cbd5e1;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.mjas-action-btn:hover {
+  background: #475569;
+  color: white;
+}
+
+.mjas-action-btn.primary {
+  background: linear-gradient(90deg, #10b981, #0d9488);
+  border: none;
+  color: white;
+  box-shadow: 0 3px 12px rgba(16, 185, 129, 0.3);
+}
+
+.mjas-action-btn.primary:hover {
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.45);
+}
+
+.mjas-action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Processing panel */
+.mjas-process-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.mjas-process-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: white;
+}
+
+.mjas-process-count {
+  font-size: 12px;
+  color: #10b981;
+  font-weight: 700;
+  font-family: monospace;
+}
+
+.mjas-process-current {
+  background: #0f172a;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 12px;
+  font-size: 12px;
+  color: #cbd5e1;
+  line-height: 1.5;
+}
+
+.mjas-process-current strong {
+  color: white;
+}
+
+.mjas-process-current small {
+  color: #64748b;
+}
+
+.mjas-process-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.mjas-process-log {
+  background: #0f172a;
+  border-radius: 8px;
+  padding: 8px;
+  max-height: 150px;
+  overflow-y: auto;
+  font-size: 10px;
+  font-family: monospace;
+}
+
+.mjas-log-entry {
+  color: #64748b;
+  padding: 2px 4px;
+  border-bottom: 1px solid #1e293b;
+}
+
+.mjas-log-entry:last-child {
+  border-bottom: none;
+}
+
+/* Nota bajo los meses */
+.mjas-hint {
+  margin: 0;
+  color: #94a3b8;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.mjas-hint b {
+  color: #34d399;
+}
+
+/* ── Asistente MJ (v2.18) ─────────────────────────────────────── */
+
+/* Encabezado con los colores de MJ */
+#mjas-widget .mjas-header {
+  background: linear-gradient(120deg, #173f5f 0%, #1f5f8b 55%, #1a7f8e 100%);
+  padding: 10px 14px;
+}
+.mj-header-logo {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 2px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+.mj-header-titulos {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+.mj-header-titulos small {
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 10px;
+}
+
+/* Destinos */
+.mj-destinos {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.mj-dest {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 10px 12px;
+  background: #334155;
+  border: 1px solid #475569;
+  border-radius: 10px;
+  cursor: pointer;
+  text-align: left;
+  font-family: inherit;
+  transition: background 0.15s, border-color 0.15s, transform 0.15s;
+}
+.mj-dest:hover:not(:disabled) {
+  background: #3b4a60;
+  border-color: #4fc2c9;
+  transform: translateX(3px);
+}
+.mj-dest:disabled { cursor: default; opacity: 0.55; }
+.mj-dest.mj-aca { border-style: dashed; }
+.mj-dest-icono {
+  font-size: 20px;
+  width: 26px;
+  text-align: center;
+  flex-shrink: 0;
+}
+.mj-dest-texto {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.mj-dest-texto strong { color: #ffffff; font-size: 1.05em; }
+.mj-dest-texto small { color: #94a3b8; font-size: 0.85em; }
+.mj-dest-destacado {
+  margin-bottom: 12px;
+  background: linear-gradient(120deg, #1f5f8b, #1a7f8e);
+  border-color: transparent;
+}
+.mj-dest-destacado .mj-dest-texto small { color: rgba(255, 255, 255, 0.8); }
+.mjas-hint { margin-top: 4px; }
+/* ── Íconos SVG animados (v2.19, sin emojis) ─────────────────────── */
+.mj-ico {
+  width: 1.25em;
+  height: 1.25em;
+  flex-shrink: 0;
+  vertical-align: -0.2em;
+}
+.mjas-close-btn .mj-ico,
+.mjas-config-btn .mj-ico { width: 15px; height: 15px; color: #ffffff; }
+.mjas-back-btn,
+.mjas-toggle,
+.mjas-reset-btn,
+.mjas-year-bar-arrow { display: inline-flex; align-items: center; gap: 6px; }
+.mjas-back-btn .mj-ico { transition: transform 0.2s; }
+.mjas-back-btn:hover .mj-ico { transform: translateX(-3px); }
+
+/* Ícono de cada destino: caja con color y animación propia al pasar el mouse */
+.mj-dest-icono {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: rgba(79, 194, 201, 0.14);
+  color: #4fc2c9;
+  font-size: 0;
+}
+.mj-dest-icono .mj-ico { width: 19px; height: 19px; }
+.mj-dest-destacado .mj-dest-icono { background: rgba(255, 255, 255, 0.18); color: #ffffff; }
+.mj-ico-comprobantes { color: #34d399; background: rgba(52, 211, 153, 0.14); }
+.mj-ico-vision { color: #60a5fa; background: rgba(96, 165, 250, 0.14); }
+.mj-ico-presentar { color: #fb923c; background: rgba(251, 146, 60, 0.14); }
+.mj-ico-inicio { color: #fbbf24; background: rgba(251, 191, 36, 0.14); }
+
+.mj-dest:hover:not(:disabled) .mj-ico-comprobantes .mj-ico { animation: mjSacude 0.5s ease; }
+.mj-dest:hover:not(:disabled) .mj-ico-vision .mj-ico { animation: mjBusca 0.8s ease; }
+.mj-dest:hover:not(:disabled) .mj-ico-presentar .mj-ico { animation: mjSube 0.6s ease; }
+.mj-dest:hover:not(:disabled) .mj-ico-inicio .mj-ico { animation: mjSalta 0.5s ease; }
+.mj-dest-destacado:hover .mj-dest-icono .mj-ico { animation: mjSacude 0.5s ease; }
+
+.mj-flecha {
+  margin-left: auto;
+  width: 16px;
+  height: 16px;
+  color: #64748b;
+  transition: transform 0.2s, color 0.2s;
+}
+.mj-dest:hover:not(:disabled) .mj-flecha { color: #4fc2c9; transform: translateX(3px); }
+
+/* Engranaje: gira al pasar el mouse */
+.mj-gira { transition: transform 0.6s ease; }
+.mjas-config-btn:hover .mj-gira { transform: rotate(120deg); }
+
+/* Estados con ícono */
+.mj-estado { display: flex; align-items: center; justify-content: center; gap: 8px; }
+.mj-estado .mj-ico { width: 18px; height: 18px; }
+.mj-estado .mjas-nav-spinner { width: 16px; height: 16px; flex-shrink: 0; }
+.mj-dibuja .mj-trazo {
+  stroke-dasharray: 24;
+  stroke-dashoffset: 24;
+  animation: mjDibuja 0.45s ease forwards 0.1s;
+}
+
+/* El menú aparece en cascada */
+.mj-destinos .mj-dest { animation: mjEntra 0.28s ease both; }
+.mj-destinos .mj-dest:nth-child(2) { animation-delay: 0.04s; }
+.mj-destinos .mj-dest:nth-child(3) { animation-delay: 0.08s; }
+.mj-destinos .mj-dest:nth-child(4) { animation-delay: 0.12s; }
+
+@keyframes mjSacude { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-10deg); } 75% { transform: rotate(10deg); } }
+@keyframes mjBusca { 0%, 100% { transform: translate(0, 0); } 30% { transform: translate(-2px, -2px); } 60% { transform: translate(2px, 1px); } }
+@keyframes mjSube { 0%, 100% { transform: translateY(0); } 45% { transform: translateY(-4px); } }
+@keyframes mjSalta { 0%, 100% { transform: translateY(0) scale(1); } 40% { transform: translateY(-3px) scale(1.08); } }
+@keyframes mjDibuja { to { stroke-dashoffset: 0; } }
+@keyframes mjEntra { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+@media (prefers-reduced-motion: reduce) {
+  #mjas-widget *, #mjas-widget-toggle::after { animation: none !important; transition: none !important; }
+  .mj-dibuja .mj-trazo { stroke-dashoffset: 0; }
+}
