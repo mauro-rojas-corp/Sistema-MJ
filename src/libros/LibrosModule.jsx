@@ -7,6 +7,8 @@ import { ClienteSelect } from '../comun/ClienteSelect';
 import { findDvColumn, sinAcentos } from '../comun/clientes';
 import { COLUMNAS, datosAComprobantes, leerArchivoLibro, libroADatos, sugerirCliente } from './leerLibroSiga.js';
 import { registroALibro } from '../comprobantes/leerRegistroMarangatu.js';
+import { libroAComprobantes } from './libroARegistro';
+import AvisoCambioIva from '../iva/AvisoCambioIva';
 import './libros.css';
 
 // Libros IVA: compras y ventas exportados de SIGA, uno por cliente + mes.
@@ -73,7 +75,16 @@ function Importador({ clientes, preset, onCerrar, onGuardado }) {
         tipo, ruc, cliente: cliente.nombre, periodo: per(anio, mes), archivo,
         totales: libro.totales, datos: libroADatos(libro), reemplazar,
       });
-      onGuardado({ id: r.id, ruc, periodo: per(anio, mes), tipo, reemplazado: r.reemplazado });
+      // También al registro de comprobantes (sin duplicar), para que el IVA
+      // del mes se pueda actualizar con este libro.
+      let registro = null;
+      try {
+        const comps = libroAComprobantes(libro, tipo, anio, mes);
+        if (comps.length) registro = await api.comprobantes.importar(ruc, cliente.nombre, comps);
+      } catch (e) {
+        registro = { error: e.message };
+      }
+      onGuardado({ id: r.id, ruc, periodo: per(anio, mes), tipo, reemplazado: r.reemplazado, cliente, registro });
     } catch (e) {
       if (e.code === 'LIBRO_EXISTE' && e.details && e.details.existente) {
         setExistente(e.details.existente);
@@ -89,7 +100,7 @@ function Importador({ clientes, preset, onCerrar, onGuardado }) {
     <div className="lb-modal-fondo" role="presentation" onMouseDown={(e) => { if (e.target === e.currentTarget && paso.estado !== 'guardando') onCerrar(); }}>
       <div className="lb-modal" role="dialog" aria-modal="true" aria-labelledby="lb-imp-titulo">
         <div className="lb-modal-head">
-          <h2 id="lb-imp-titulo"><Upload size={18} aria-hidden="true" /> Importar libro de SIGA</h2>
+          <h2 id="lb-imp-titulo"><Upload size={18} aria-hidden="true" /> Importar libro (SIGA o Marangatu)</h2>
           <button type="button" className="lb-icono" onClick={onCerrar} aria-label="Cerrar" disabled={paso.estado === 'guardando'}><X size={18} /></button>
         </div>
 
@@ -394,6 +405,7 @@ export default function LibrosModule({ withDesktopSidebar = false }) {
   const [anio, setAnio] = useState(() => Number(year) || new Date().getFullYear());
   const [abierto, setAbierto] = useState(null);
   const [importar, setImportar] = useState(null); // preset | null
+  const [avisoIva, setAvisoIva] = useState(null); // IVA ya cargado que cambiaría
   const [aviso, setAviso] = useState('');
   const avisoTimer = useRef(null);
 
@@ -453,15 +465,17 @@ export default function LibrosModule({ withDesktopSidebar = false }) {
     return [...m.values()].sort((a, b) => b.ultimo.localeCompare(a.ultimo) || a.nombre.localeCompare(b.nombre, 'es'));
   }, [indice.libros]);
 
-  const alGuardar = async ({ ruc: r, periodo, tipo, reemplazado }) => {
+  const alGuardar = async ({ ruc: r, periodo, tipo, reemplazado, cliente: cli, registro }) => {
     setImportar(null);
+    if (registro && registro.agregados > 0 && cli) setAvisoIva([{ cliente: { ruc: cli.ruc, dv: cli.dv, nombre: cli.nombre }, periodo }]);
     const libros = await api.libros.listar().catch(() => null);
     if (libros) setIndice({ cargado: true, error: '', libros });
     setRuc(r);
     setAnio(Number(periodo.slice(0, 4)));
     const nuevo = libros && libros.find((l) => l.ruc === r && l.periodo === periodo && l.tipo === tipo);
     if (nuevo) setAbierto(nuevo);
-    mostrarAviso(reemplazado ? 'Libro reemplazado' : 'Libro importado');
+    const extra = registro && !registro.error ? ` · ${registro.agregados} al registro de comprobantes${registro.repetidos ? ` (${registro.repetidos} ya estaban)` : ''}` : '';
+    mostrarAviso((reemplazado ? 'Libro reemplazado' : 'Libro importado') + extra);
   };
 
   return (
@@ -574,6 +588,7 @@ export default function LibrosModule({ withDesktopSidebar = false }) {
           onGuardado={alGuardar}
         />
       )}
+      {avisoIva && <AvisoCambioIva pendientes={avisoIva} onCerrar={() => setAvisoIva(null)} />}
       {aviso && <div className="lb-toast" role="status">{aviso}</div>}
     </main>
   );

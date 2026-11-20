@@ -521,6 +521,27 @@ export async function handle(body) {
       cpMeta.set(k, { cliente: String(body.cliente || (cpMeta.get(k) || {}).cliente || ''), modificadoPor: session.user, modificadoEl: new Date().toISOString() });
       return { ok: true, comprobante: c, periodo, cantidad: lista.length };
     }
+    // Lectura con IA simulada: devuelve un comprobante armado a partir del
+    // nombre del archivo (para probar la pantalla de revisión sin la API).
+    case 'lecturaDocumento': {
+      const n = String(body.nombre || '').toLowerCase();
+      if (n.includes('error')) return { ok: false, code: 'LECTURA_API_ERROR', error: 'No se pudo leer el documento (prueba).' };
+      if (n.includes('vacio')) return { ok: true, documentos: [], nota: 'No parece un comprobante.' };
+      const base = { cdc: '', condicion: 'contado', moneda: 'PYG', cambio: 0, gravado5: 0, exento: 0, iva5: 0, monto: 0, concepto: '', facturas: '', forma_pago: '', comprobante_asociado: '', observaciones: '' };
+      const cliente = (body.contexto || '').match(/RUC (\d+)/);
+      const rucCli = cliente ? cliente[1] : '80000000';
+      if (n.includes('recibo')) {
+        return { ok: true, nota: '', documentos: [{ ...base, clase: 'recibo', fecha: '2026-10-20', numero: '0000777', timbrado: '', emisor_ruc: '80012345-6', emisor_nombre: 'PROVEEDOR SA', receptor_ruc: rucCli, receptor_nombre: 'CLIENTE', gravado10: 0, iva10: 0, total: 300000, monto: 300000, concepto: 'Pago de alquiler', forma_pago: 'Transferencia', confianza: 'alta' }] };
+      }
+      const compra = n.includes('compra');
+      return { ok: true, nota: '', documentos: [{
+        ...base, clase: 'factura', fecha: '2026-10-12', numero: compra ? '001-002-0000456' : '001-001-0000999', timbrado: '16543210',
+        emisor_ruc: compra ? '80012345-6' : rucCli, emisor_nombre: compra ? 'PROVEEDOR SA' : 'CLIENTE',
+        receptor_ruc: compra ? rucCli : '2318278-4', receptor_nombre: compra ? 'CLIENTE' : 'BACCHETTA MATTEUCCI ALDO',
+        gravado10: 1100000, iva10: 100000, total: 1100000, confianza: n.includes('borrosa') ? 'baja' : 'alta',
+        observaciones: n.includes('borrosa') ? 'Número parcialmente ilegible' : '',
+      }] };
+    }
     case 'comprobantesImportar': {
       const ruc = String(body.ruc || '').replace(/\D/g, '');
       if (!ruc) return { ok: false, code: 'COMPROBANTES_DATOS', error: 'Elegí el cliente' };

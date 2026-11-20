@@ -18,7 +18,8 @@ const perTexto = (p) => {
 // usados por el cliente, para completar el nombre al escribir el RUC.
 // `cliente` = { nombre, ruc, dv } del registro; `estudio` = { nombre, ruc, ... }
 // (para los recibos de honorarios). onGuardar(comprobante, otro, conPdf).
-export default function FormComprobante({ inicial, periodoActual, lista, contrapartes, cliente, estudio, guardando, error, onGuardar, onCerrar }) {
+// soloRevisar: se usa para corregir algo leído antes de guardarlo (no guarda).
+export default function FormComprobante({ inicial, periodoActual, lista, contrapartes, cliente, estudio, guardando, error, onGuardar, onCerrar, soloRevisar = false }) {
   const [c, setC] = useState(inicial);
   const [intentado, setIntentado] = useState(false);
   const primero = useRef(null);
@@ -85,7 +86,7 @@ export default function FormComprobante({ inicial, periodoActual, lista, contrap
         onKeyDown={(e) => { if (e.key === 'Escape' && !guardando) onCerrar(); }}
       >
         <div className="lb-modal-head">
-          <h2 id="cp-form-titulo">{editando ? `Editar ${recibo ? 'recibo' : 'comprobante'}` : recibo ? 'Nuevo recibo de dinero' : 'Nuevo comprobante'}</h2>
+          <h2 id="cp-form-titulo">{soloRevisar ? 'Revisar lo leído' : editando ? `Editar ${recibo ? 'recibo' : 'comprobante'}` : recibo ? 'Nuevo recibo de dinero' : 'Nuevo comprobante'}</h2>
           <button type="button" className="lb-icono" onClick={onCerrar} aria-label="Cerrar" disabled={guardando}><X size={18} /></button>
         </div>
 
@@ -318,6 +319,10 @@ export default function FormComprobante({ inicial, periodoActual, lista, contrap
 
         <div className="lb-modal-pie">
           <button type="button" className="rx-btn rx-btn-outline" onClick={onCerrar} disabled={guardando}>Cancelar</button>
+          {soloRevisar ? (
+            <button type="submit" className="rx-btn rx-btn-primary">Listo</button>
+          ) : (
+            <>
           {!editando && (
             <button type="button" className="rx-btn rx-btn-outline" onClick={() => enviar(true)} disabled={guardando}>Guardar y cargar otro</button>
           )}
@@ -328,6 +333,8 @@ export default function FormComprobante({ inicial, periodoActual, lista, contrap
             </>
           ) : (
             <button type="submit" className="rx-btn rx-btn-primary" disabled={guardando}>{guardando ? 'Guardando…' : 'Guardar'}</button>
+          )}
+            </>
           )}
         </div>
       </form>

@@ -344,7 +344,7 @@ export function construirPasosGuia({ canAssign, isSuper, conAsistente = false })
         <ul>
           <li>Elegí el cliente y el mes, y tocá <strong>Nuevo comprobante</strong>: fecha, número, <strong>timbrado</strong>, RUC (el dígito verificador se completa solo), montos con IVA incluido y a qué impuesto se imputa.</li>
           <li><strong>Guardar y cargar otro</strong> deja la fecha y el tipo listos para el siguiente.</li>
-          <li><strong>Importar de Marangatu</strong>: subí el Excel del «Detalle de comprobantes registrados» y se cargan todos con timbrado, RUC e imputación (los repetidos no se duplican).</li>
+          <li><strong>Subir documentos</strong>: arrastrá facturas, notas de crédito o recibos en PDF o foto, planillas de cualquier sistema o el detalle de Marangatu. Claude los lee, propone el cliente por el RUC y vos revisás antes de guardar. Si cambia un IVA ya cargado, te avisa y decidís.</li>
           <li><strong>Recibo de dinero</strong>: emitido por el cliente, recibido por el cliente o de honorarios del estudio. Los emitidos se numeran solos y salen en PDF (original y duplicado) con el monto en letras.</li>
           <li>Lo imputado a IVA se pasa al Formulario 120 desde <strong>Vencimientos IVA</strong> → el cliente → <strong>Traer al formulario</strong>.</li>
         </ul>

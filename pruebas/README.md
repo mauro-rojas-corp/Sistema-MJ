@@ -50,6 +50,7 @@ original.
 | CAMBIO-16 | Sección «Comprobantes»: registro de facturas y notas de crédito por cliente y mes (timbrado, RUC con DV, moneda, imputación IVA/IRE/IRP) y botón «Traer al formulario» en el IVA | En prueba | No |
 | CAMBIO-17 | Recibos de dinero en «Comprobantes»: emitidos por el cliente o por el estudio (honorarios), numerados solos y en PDF A4 original/duplicado con monto en letras; y recibidos por el cliente | En prueba | No |
 | CAMBIO-18 | Importar el «Detalle de comprobantes registrados» de Marangatu (RG 90): al registro de Comprobantes (todos, sin duplicar) y en Libros IVA | En prueba | No |
+| CAMBIO-19 | «Subir documentos»: lectura con Claude de PDF, fotos y planillas de cualquier formato → revisión → registro; aviso para aceptar o rechazar cuando cambia un IVA ya cargado (también al importar libros); se quita «Cargar detalle de comprobantes» del IVA | En prueba | No |
 
 ### CAMBIO-1 · Ficha del cliente y Buzón
 
@@ -458,3 +459,39 @@ Es la primera etapa del plan para cargar distintos tipos de documento. Cada comp
   - Avisa si el archivo trae comprobantes de otros meses que no entran en ese libro.
 - **Backend:** acción nueva `comprobantesImportar`, que guarda en bloque, un mes por escritura, con bloqueo. Hay que pegar el `AppsScript-Comprobantes.gs` nuevo y publicar una nueva versión.
 - **Prueba hecha:** con el archivo de ejemplo, 4 facturas de venta de octubre 2026. El IVA calculado coincide con el de Marangatu (Gs. 2.706.400) y el DV de los 4 RUC da bien. Ese archivo **no** se sube al repositorio.
+
+### CAMBIO-19 · Lectura de documentos con Claude y aviso de cambio del IVA
+
+- **Comprobantes → «Subir documentos»** reemplaza al botón «Importar de Marangatu», que ahora está incluido. Se pueden arrastrar **varios archivos a la vez**:
+  - **Se leen en la app, sin costo:** el detalle de comprobantes de Marangatu.
+  - **Los lee Claude**, a través de `AppsScript-Lectura.gs`: PDF (incluido el KuDE), fotos (JPG, PNG, WEBP; se achican a 2000 px antes de enviarlas), Excel o CSV de cualquier sistema (se convierten a texto en la app) y XML o TXT.
+  - Si un archivo falla, se muestra su error y los demás siguen.
+- **Cómo decide dónde va cada comprobante:** busca el RUC del emisor y del receptor en la cartera.
+  - Si el cliente **emitió**, es una venta (o un recibo emitido).
+  - Si **recibió**, es una compra (o un recibo recibido).
+  - Si el emisor es el RUC del estudio, es un recibo de honorarios.
+  - Si ninguno está en la cartera, usa el cliente elegido en pantalla, o pide elegirlo.
+- **Revisión antes de guardar (no se guarda nada sin confirmar):** cada comprobante aparece con su cliente (se puede cambiar), su tipo, número, fecha, contraparte y total.
+  - **En rojo** lo que falta (fecha, cliente, monto) o lo repetido entre los archivos subidos. Mientras haya algo en rojo no se puede guardar.
+  - **En amarillo** lo que conviene revisar:
+    - la lectura es dudosa;
+    - el IVA o el total del documento no coincide con lo calculado;
+    - el DV del RUC no coincide;
+    - falta el timbrado;
+    - lo que Claude haya anotado como duda.
+  - Con el lápiz se abre el formulario completo para corregir; con la casilla se excluye un comprobante; con la papelera se quita.
+  - Al guardar, lo que ya estaba en el registro no se duplica.
+- **Aviso de cambio del IVA:** después de guardar documentos (y también al **importar un libro en Libros IVA**, que ahora pasa sus comprobantes al registro), si el cliente **ya tiene el IVA de ese mes cargado** y con el registro cambiaría, aparece un aviso con **Ahora** y **Con el registro** (IVA débito, crédito y resultado).
+  - **Aceptar:** se reemplazan las ventas y compras del formulario por las del registro. Los saldos anteriores, las retenciones y los demás datos no se tocan.
+  - **Rechazar:** **nada cambia**.
+  - Si el IVA figura como presentado, avisa que puede hacer falta rectificar. Si no hay IVA cargado o no cambia nada, no aparece ningún aviso.
+- **IVA:** se quitó la casilla «Cargar detalle de comprobantes»; el detalle se carga desde el registro. Los montos que vienen del registro muestran debajo, en gris, el número y la contraparte.
+- **Backend nuevo, `AppsScript-Lectura.gs`:** la acción `lecturaDocumento` usa la clave, el límite diario y la hoja «Agente Uso» del módulo Agente, y pide a Claude una respuesta con formato JSON fijo (`output_config.format`).
+  - El modelo es el del asistente (Haiku 5.5), o el que se ponga en la propiedad `LECTURA_MODELO` (por ejemplo `claude-sonnet-5-5` para fotos difíciles).
+  - No guarda nada.
+- **Hay que pegar:** `AppsScript-Lectura.gs` (nuevo), `AppsScript-Avisos.gs` y `AppsScript-Comprobantes.gs`, y publicar una nueva versión.
+- **Pruebas hechas:**
+  - Punta a punta en PC y celular con el servidor de prueba (la lectura con IA es simulada), incluidos los dos caminos del aviso (aceptar y rechazar).
+  - Importación de un libro con aviso.
+  - Simulador del Apps Script de lectura (8/8).
+  - **Pendiente:** la lectura real con Claude, que se prueba una vez pegado el backend.

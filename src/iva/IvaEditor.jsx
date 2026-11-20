@@ -15,7 +15,6 @@ import {
   IVA_DEFAULT_NUEVO,
   LISTS,
   LIST_BY,
-  VENTAS_KEYS,
   calc,
   cleanDraft,
   exportFichaPDF,
@@ -67,15 +66,6 @@ function readWaDestino() {
 function esTactil() {
   return typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches;
 }
-const LIBRO_STORAGE_KEY = 'venc-iva-libro';
-
-function readLibroPreference() {
-  try {
-    return localStorage.getItem(LIBRO_STORAGE_KEY) === '1';
-  } catch {
-    return false;
-  }
-}
 
 function emptyRow(iva = IVA_DEFAULT_NUEVO, f = '') {
   return { m: 0, iva, f, n: '', tb: '', t: '' };
@@ -92,7 +82,6 @@ export default function IvaEditor({
 
   const [draft, setDraft] = useState(null);
   const [loadError, setLoadError] = useState('');
-  const [libroMode, setLibroMode] = useState(readLibroPreference);
   const [notas, setNotas] = useState(cliente.notas || '');
   const [wa, setWa] = useState(cliente.wa || '');
   const [focusTarget, setFocusTarget] = useState(null);
@@ -127,7 +116,6 @@ export default function IvaEditor({
         const full = (await api.iva.getDoc(periodo, cliente.ruc)) || summaryDoc;
         if (cancelled) return;
         const d = normDraft({ ...full });
-        if (LISTS.some((L) => getItems(d, L.k).some((x) => x.f || x.n || x.tb || x.t))) setLibroMode(true);
         setDraft(d);
       } catch (error) {
         if (!cancelled) setLoadError(error.message || 'No se pudo abrir el cliente. Revisá la conexión y reintentá.');
@@ -184,7 +172,7 @@ export default function IvaEditor({
     const rows = draft[k];
     const last = rows[rows.length - 1];
     if (last && !last.m) { setFocusTarget(k + ':' + (rows.length - 1)); return; }
-    update((d) => ({ ...d, [k]: [...d[k], emptyRow(last ? last.iva : IVA_DEFAULT_NUEVO, libroMode && last && last.f ? last.f : '')] }));
+    update((d) => ({ ...d, [k]: [...d[k], emptyRow(last ? last.iva : IVA_DEFAULT_NUEVO, '')] }));
     setFocusTarget(k + ':' + rows.length);
   };
   const removeRow = (k, i) => update((d) => {
@@ -201,10 +189,10 @@ export default function IvaEditor({
 
   useEffect(() => {
     if (!focusTarget || !rootRef.current) return;
-    const sel = libroMode ? `[data-d="${focusTarget}:f"]` : `[data-a="${focusTarget}"]`;
+    const sel = `[data-a="${focusTarget}"]`;
     rootRef.current.querySelector(sel)?.focus();
     setFocusTarget(null);
-  }, [focusTarget, libroMode, draft]);
+  }, [focusTarget, draft]);
 
   // Descargar o copiar la ficha: si estaba Pendiente, pasa a Enviado al
   // cliente (como siempre).
@@ -370,7 +358,6 @@ export default function IvaEditor({
     const d = LIST_BY[key];
     const rows = draft[key] || [];
     const c = k.C[key];
-    const tl = VENTAS_KEYS.has(key) ? 'Cliente (RUC o nombre)' : 'Proveedor (RUC o nombre)';
     return (
       <div className="iva-cat" key={key}>
         <div className="cat-h">
@@ -379,14 +366,12 @@ export default function IvaEditor({
           <span className="cat-sum">{c.sum ? 'Total ' + gs(c.sum) + (d.r ? ' · IVA ' + gs(c.iva) : '') : ''}</span>
         </div>
         {rows.map((x, i) => (
-          <div className={`arow ${libroMode ? 'libro' : ''}`} key={i}>
-            {libroMode && (
-              <>
-                <input type="date" className="dt" data-d={`${key}:${i}:f`} value={x.f || ''} onChange={(e) => setItem(key, i, { f: e.target.value })} aria-label={`Fecha del comprobante ${i + 1}`} />
-                <input className="nm" placeholder="N° comprobante" maxLength={40} value={x.n || ''} onChange={(e) => setItem(key, i, { n: e.target.value })} aria-label={`Número de comprobante ${i + 1}`} />
-                <input className="tb" placeholder="Timbrado" inputMode="numeric" value={x.tb || ''} onChange={(e) => setItem(key, i, { tb: e.target.value.replace(/\D/g, '').slice(0, 8) })} aria-label={`Timbrado del comprobante ${i + 1}`} title="Timbrado (8 dígitos)" />
-                <input className="tc" placeholder={tl} maxLength={80} value={x.t || ''} onChange={(e) => setItem(key, i, { t: e.target.value })} aria-label={`${tl} ${i + 1}`} />
-              </>
+          <div className="arow" key={i}>
+            {/* Detalle que viene del registro de comprobantes (sólo lectura). */}
+            {(x.n || x.t) && (
+              <span className="arow-det" title={[x.f, x.n, x.tb ? 'timbrado ' + x.tb : '', x.t].filter(Boolean).join(' · ')}>
+                {[x.n, x.t].filter(Boolean).join(' · ')}
+              </span>
             )}
             <MoneyInput
               className="amt"
@@ -410,7 +395,7 @@ export default function IvaEditor({
             )}
           </div>
         ))}
-        <button type="button" className="iva-linkbtn addrow" onClick={() => addRow(key)}>+ Agregar {libroMode ? 'otro comprobante' : 'otro monto'}</button>
+        <button type="button" className="iva-linkbtn addrow" onClick={() => addRow(key)}>+ Agregar otro monto</button>
       </div>
     );
   };
@@ -485,18 +470,6 @@ export default function IvaEditor({
             />
           </div>
 
-          <label className="iva-chk">
-            <input
-              type="checkbox"
-              checked={libroMode}
-              onChange={(e) => {
-                setLibroMode(e.target.checked);
-                try { localStorage.setItem(LIBRO_STORAGE_KEY, e.target.checked ? '1' : '0'); } catch { /* preferencia opcional */ }
-              }}
-            />
-            <span>Cargar detalle de comprobantes (fecha, número, timbrado y cliente/proveedor) para el libro de ventas y compras</span>
-          </label>
-
           <TraerDelRegistro
             ruc={cliente.ruc}
             periodo={periodo}
@@ -507,7 +480,6 @@ export default function IvaEditor({
                 LISTS.forEach((L) => { nd[L.k] = listas[L.k] || []; });
                 return normDraft(nd);
               });
-              setLibroMode(true);
               toast(`Se cargaron ${n} comprobantes del registro al formulario.`);
             }}
           />

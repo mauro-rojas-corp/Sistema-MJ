@@ -382,6 +382,12 @@ function handleAvisosAction(action, body, sessionUser, sessionRole) {
   if (String(action).indexOf('libros') === 0 && typeof handleLibrosAction === 'function') {
     return handleLibrosAction(action, body, sessionUser, sessionRole);
   }
+  // Lectura de documentos con IA (AppsScript-Lectura.gs).
+  if (String(action).indexOf('lectura') === 0) {
+    return typeof handleLecturaAction === 'function'
+      ? handleLecturaAction(action, body, sessionUser, sessionRole)
+      : errorResponse('Falta el archivo Lectura en el Apps Script.', 'LECTURA_SIN_MODULO');
+  }
   // Registro de comprobantes por cliente (AppsScript-Comprobantes.gs).
   if (String(action).indexOf('comprobantes') === 0 && typeof handleComprobantesAction === 'function') {
     return handleComprobantesAction(action, body, sessionUser, sessionRole);

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AlertTriangle, Copy, Download, FilePlus2, FileText, Pencil, Printer, RefreshCw, Search, Trash2, Upload } from 'lucide-react';
+import { AlertTriangle, Copy, Download, FilePlus2, FileText, Pencil, Printer, RefreshCw, Search, Sparkles, Trash2 } from 'lucide-react';
 import { api } from '../api';
 import { useClientsData, useClientsMeta } from '../context/ClientsContext';
 import { ClienteSelect } from '../comun/ClienteSelect';
@@ -7,7 +7,8 @@ import { clientesDeFilas, sinAcentos } from '../comun/clientes';
 import { MESES, firma, gs, periodoFiscalDeHoja } from '../iva/ivaCore.js';
 import { getIvaConfig } from '../iva/ivaConfigCache';
 import FormComprobante from './FormComprobante';
-import ImportarMarangatu from './ImportarMarangatu';
+import LeerDocumentos from './LeerDocumentos';
+import AvisoCambioIva from '../iva/AvisoCambioIva';
 import { EMISORES, FORMAS_PAGO, IMPUESTOS, TIPOS, calcular, comprobanteVacio, esRecibo, normalizar, periodoDe, reciboEmitido, totales } from './comprobantesCore.js';
 import { descargarReciboPdf } from './reciboPdf';
 import '../libros/libros.css';
@@ -60,9 +61,11 @@ export default function ComprobantesModule({ withDesktopSidebar = false }) {
   const [errorForm, setErrorForm] = useState('');
   const [borrar, setBorrar] = useState(null);
   const [importando, setImportando] = useState(false);
+  const [avisoIva, setAvisoIva] = useState(null); // [{ cliente, periodo }]
   const [aviso, setAviso] = useState('');
   const [contrapartesVer, setContrapartesVer] = useState(0);
   const avisoTimer = useRef(null);
+  const avisoPendiente = useRef('');
   const formSeq = useRef(0); // key de cada formulario nuevo (se monta de cero)
   const [config, setConfig] = useState(null);
   useEffect(() => { let v = true; getIvaConfig().then((c) => { if (v) setConfig(c); }); return () => { v = false; }; }, []);
@@ -256,7 +259,7 @@ export default function ComprobantesModule({ withDesktopSidebar = false }) {
         </div>
         <div className="cp-head-acciones">
           <button type="button" className="rx-btn rx-btn-outline cp-importar" onClick={() => setImportando(true)}>
-            <Upload size={16} aria-hidden="true" /> Importar de Marangatu
+            <Sparkles size={16} aria-hidden="true" /> Subir documentos
           </button>
           <button type="button" className="rx-btn rx-btn-primary cp-nuevo" onClick={() => abrirNuevo()} disabled={!cliente || cargando}>
             <FilePlus2 size={16} aria-hidden="true" /> Nuevo comprobante
@@ -443,17 +446,28 @@ export default function ComprobantesModule({ withDesktopSidebar = false }) {
         />
       )}
       {importando && (
-        <ImportarMarangatu
+        <LeerDocumentos
           clientes={clientes}
-          rucInicial={ruc}
+          preferido={ruc}
+          estudio={estudio}
           onCerrar={() => setImportando(false)}
-          onImportado={({ ruc: r, periodo: p, agregados, repetidos }) => {
+          onGuardado={({ afectados, agregados, repetidos, rucs }) => {
             setImportando(false);
             cargarIndice();
-            if (r === ruc && p === periodo) cargarMes(r, p);
-            setRuc(r);
-            if (p) setPeriodo(p);
-            mostrarAviso(`Importados ${agregados}${repetidos ? ` · ${repetidos} ya estaban` : ''}`);
+            if (ruc && rucs.includes(ruc)) cargarMes(ruc, periodo);
+            else if (!ruc && rucs.length === 1) setRuc(rucs[0]);
+            const msg = `Guardados ${agregados}${repetidos ? ` · ${repetidos} ya estaban` : ''}`;
+            // Con aviso de IVA, el mensaje sale al cerrarlo (si no, lo tapa).
+            if (afectados.length) { avisoPendiente.current = msg; setAvisoIva(afectados); } else mostrarAviso(msg);
+          }}
+        />
+      )}
+      {avisoIva && (
+        <AvisoCambioIva
+          pendientes={avisoIva}
+          onCerrar={() => {
+            setAvisoIva(null);
+            if (avisoPendiente.current) { mostrarAviso(avisoPendiente.current); avisoPendiente.current = ''; }
           }}
         />
       )}

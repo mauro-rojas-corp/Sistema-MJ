@@ -162,6 +162,14 @@ export default function IvaModule({ withDesktopSidebar = false, initialRuc = nul
     load(periodo);
   };
 
+  // Cuando otra sección actualiza un IVA (aviso de cambio al subir
+  // documentos), el tablero se recarga.
+  useEffect(() => {
+    const alCambiar = () => { if (view === 'tablero') load(periodo); };
+    window.addEventListener('ctc:iva-actualizado', alCambiar);
+    return () => window.removeEventListener('ctc:iva-actualizado', alCambiar);
+  }, [load, periodo, view]);
+
   // Actualización periódica sólo en el tablero: dentro del editor se
   // sobrescribiría lo que se está cargando.
   useEffect(() => {

@@ -295,7 +295,8 @@
 .iva-cat .cas { font-size: var(--rx-fs-2xs); font-weight: 700; color: var(--rx-muted); min-width: 68px; }
 .iva-cat .cat-t { font-weight: 600; flex: 1; min-width: 200px; }
 .iva-cat .cat-sum { font-size: var(--rx-fs-xs); font-weight: 700; color: var(--rx-brand); }
-.iva-cat .arow { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
+.iva-cat .arow { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 6px; }
+.iva-cat .arow-det { flex: 1 0 100%; margin-bottom: -4px; overflow: hidden; color: var(--rx-muted); font-size: 12px; white-space: nowrap; text-overflow: ellipsis; }
 .iva-cat .arow.libro { flex-wrap: wrap; padding-bottom: 8px; border-bottom: 1px dashed var(--rx-line); }
 .iva-cat .amt { flex: 1; text-align: right; }
 .iva-cat .arow.libro .amt { flex: none; width: 150px; }

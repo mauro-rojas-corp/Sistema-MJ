@@ -1,6 +1,6 @@
 // Genera el backend de PRUEBAS (pruebas/backend-pruebas/Codigo-PRUEBAS.gs):
 // un solo archivo para pegar en Apps Script, con los tres .gs del proyecto
-// (auth, IVA, Marcaciones, Avisos, Sugerencias, Preferencias, Libros, Comprobantes) + el instalador de datos ficticios.
+// (auth, IVA, Marcaciones, Avisos, Sugerencias, Preferencias, Libros, Comprobantes, Lectura) + el instalador de datos ficticios.
 //
 // Único cambio respecto del backend real: la planilla de administración se
 // toma de la propiedad ADMIN_SPREADSHEET_ID (la crea el instalador) en vez de
@@ -32,6 +32,7 @@ const partes = [
   ['AppsScript-Preferencias.gs', leer('AppsScript-Preferencias.gs')],
   ['AppsScript-Libros.gs', leer('AppsScript-Libros.gs')],
   ['AppsScript-Comprobantes.gs', leer('AppsScript-Comprobantes.gs')],
+  ['AppsScript-Lectura.gs', leer('AppsScript-Lectura.gs')],
   ['AppsScript-Agente.gs', leer('AppsScript-Agente.gs')],
   ['AppsScript-Whaticket.gs', leer('AppsScript-Whaticket.gs')],
   ['AppsScript-AvisoDiario.gs', leer('AppsScript-AvisoDiario.gs')],
